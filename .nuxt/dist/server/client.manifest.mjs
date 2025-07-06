@@ -1,0 +1,1 @@
+export { default } from "file:///C:/Users/Imer/Desktop/formulario-nuxt/node_modules/@nuxt/vite-builder/dist/runtime/client.manifest.mjs"
