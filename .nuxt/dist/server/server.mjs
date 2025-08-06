@@ -1,1 +1,1 @@
-export { default } from "file:///C:/Users/Imer/Desktop/formulario-nuxt/node_modules/@nuxt/vite-builder/dist/runtime/vite-node.mjs"
+export { default } from "file:///C:/Users/Imer/Documents/GitHub/Formulario/node_modules/@nuxt/vite-builder/dist/runtime/vite-node.mjs"

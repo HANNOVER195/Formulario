@@ -114,7 +114,12 @@
 
 
 <script setup>
-import { ref, onMounted } from 'vue'
+definePageMeta({
+  ssr: false
+})
+
+
+
 import { useRoute } from 'vue-router'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '~/firebase/firebase'
@@ -123,70 +128,141 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
 const route = useRoute()
-const formulario = ref(null)
 
 function formatNumber(value) {
   if (value == null || isNaN(value)) return '0'
   return Number(value).toLocaleString('es-CL', { maximumFractionDigits: 0 })
 }
+function sanitizeFormulario(data) {
+  const toISO = (ts) => (ts?.toDate ? ts.toDate().toISOString() : ts ?? null)
 
-onMounted(async () => {
-  const id = route.params.id
-  if (!id) {
-    alert('ID de formulario no especificado')
-    return
+  return {
+    ...data,
+    createdAt: toISO(data.createdAt),
+    descripcion: data.descripcion ?? '',
+    detalles: data.detalles ?? '',
+    textSections: data.textSections?.map(section => ({
+      content: section.content ?? ''
+    })) ?? [],
+    sections: data.sections?.map(section => ({
+      title: section.title ?? '',
+      totalSection: section.totalSection ?? 0,
+      fields: section.fields?.map(field => ({
+        label: field.label ?? '',
+        unit: field.unit ?? '',
+        unitPrice: field.unitPrice ?? 0,
+        quantity: field.quantity ?? 0,
+        total: field.total ?? 0
+      })) ?? []
+    })) ?? [],
+    totalPorSeccion: data.totalPorSeccion ?? [],
+    totalGeneral: data.totalGeneral ?? 0,
+    resumenFinanciero: {
+      gastosSSO: data.resumenFinanciero?.gastosSSO ?? 0,
+      neto: data.resumenFinanciero?.neto ?? 0,
+      iva: data.resumenFinanciero?.iva ?? 0,
+      totalFinal: data.resumenFinanciero?.totalFinal ?? 0,
+      fechaPago: toISO(data.resumenFinanciero?.fechaPago)
+    }
   }
-  const docRef = doc(db, 'formularios', id)
+}
+
+
+
+const { data: formulario, error } = await useAsyncData(`formulario-${route.params.id}`, async () => {
+  const docRef = doc(db, 'formularios', route.params.id)
   const docSnap = await getDoc(docRef)
 
-  if (docSnap.exists()) {
-    formulario.value = docSnap.data()
-  } else {
-    alert('Formulario no encontrado.')
+  if (!docSnap.exists()) {
+    throw createError({ statusCode: 404, statusMessage: 'Formulario no encontrado' })
   }
+
+  const rawData = docSnap.data()
+  return sanitizeFormulario(rawData)
 })
 
-function exportPDF() {
-  const doc = new jsPDF()
-  const marginLeft = 15
-  let currentY = 20
 
+
+
+async function exportPDF() {
+  const [{ jsPDF }, autoTable] = await Promise.all([
+    import('jspdf'),
+    import('jspdf-autotable').then(m => m.default || m)
+  ])
+
+  const doc = new jsPDF()
+  const marginLeft = 10
+  let currentY = 20
+  
   // Título principal
-  doc.setFontSize(18)
+  doc.setFontSize(12)
   doc.text(formulario.value.name || 'Formulario', marginLeft, currentY)
   currentY += 10
 
   // Datos generales
-  doc.setFontSize(12)
+  doc.setFontSize(8)
   if (formulario.value.companyName) {
     doc.text(`Empresa: ${formulario.value.companyName}`, marginLeft, currentY)
-    currentY += 6
+    currentY += 3
   }
   if (formulario.value.attentionName) {
     doc.text(`A nombre de: ${formulario.value.attentionName}`, marginLeft, currentY)
-    currentY += 6
+    currentY += 3
   }
-  if (formulario.value.createdAt?.toDate) {
-    const fecha = formulario.value.createdAt.toDate().toLocaleString('es-CL')
+  if (formulario.value.createdAt) {
+    const fecha = new Date(formulario.value.createdAt).toLocaleString('es-CL')
     doc.text(`Fecha de creación: ${fecha}`, marginLeft, currentY)
-    currentY += 10
+    currentY += 3
   }
+
+    // Descripción
+   
+    if (formulario.value.textSections?.length) {
+      doc.setFontSize(8)
+      
+      currentY += 3
+
+      doc.setFontSize(8)
+
+      const pageHeight = doc.internal.pageSize.height
+      const maxWidth = 180
+      const lineHeight = 4.5
+      const padding = 1
+
+      formulario.value.textSections.forEach((section) => {
+        const text = section.content
+        const lines = doc.splitTextToSize(text, maxWidth)
+
+        lines.forEach((line) => {
+          if (currentY + lineHeight > pageHeight - padding) {
+            doc.addPage()
+            currentY = padding
+          }
+
+          doc.text(line, marginLeft, currentY)
+          currentY += lineHeight
+        })
+
+        currentY += 2 // Espacio extra entre secciones
+      })
+    }
 
   // Secciones con productos
   formulario.value.sections.forEach((section, i) => {
-    currentY += 10
-    doc.setFontSize(14)
+    currentY += 4
+    doc.setFontSize(8)
     doc.text(section.title || `Sección ${i + 1}`, marginLeft, currentY)
-    currentY += 6
+    currentY += 3
 
     const tableColumn = ['Producto', 'Unidad', 'Valor Unitario', 'Cantidad', 'Total']
     const tableRows = section.fields.map(field => [
       field.label,
       field.unit || '',
-      `$ ${field.unitPrice}`,
+      formatCurrency(field.unitPrice),
       field.quantity,
-      `$ ${field.total}`
+      formatCurrency(field.total)
     ])
+
 
     autoTable(doc, {
       startY: currentY,
@@ -194,98 +270,95 @@ function exportPDF() {
       body: tableRows,
       margin: { left: marginLeft },
       theme: 'grid',
-      styles: { fontSize: 10 },
-      headStyles: { fillColor: [30, 30, 30] }
+      styles: { 
+        fontSize: 8,
+        cellPadding: 0.5,
+        overflow: 'ellipsize',
+        cellWidth: 'wrap'
+      },
+      headStyles: { fillColor: [30, 30, 30] },
+      columnStyles: {
+        '*': { cellPadding: 0.5 }
+      }
     })
 
     currentY = doc.lastAutoTable.finalY + 5
-    doc.setFontSize(12)
-    doc.text(`Total sección: $${section.totalSection}`, marginLeft + 120, currentY)
+    doc.setFontSize(8)
+    doc.text(`Total sección: ${formatCurrency(section.totalSection)}`, marginLeft + 120, currentY)
   })
 
-  currentY += 10
-  doc.setFontSize(14)
+  currentY += 4
+  doc.setFontSize(10)
   doc.text('Total de servicio', marginLeft, currentY)
-  currentY += 6
+  currentY += 4
 
   // Tabla Total de servicio
-  const totalServicioRows = formulario.value.totalPorSeccion.map((total, i) => [
+    const totalServicioRows = formulario.value.totalPorSeccion.map((total, i) => [
     formulario.value.sections[i]?.title || `Sección ${i + 1}`,
-    `$${total}`
+    formatCurrency(total)
   ])
+
   autoTable(doc, {
     startY: currentY,
     head: [['Sección', 'Total']],
     body: totalServicioRows,
     margin: { left: marginLeft },
     theme: 'grid',
-    styles: { fontSize: 12 },
+    styles: { 
+      fontSize: 8,
+      cellPadding: 0.5,
+      overflow: 'ellipsize',
+      cellWidth: 'wrap'
+    },
     headStyles: { fillColor: [50, 50, 50] }
   })
-  currentY = doc.lastAutoTable.finalY + 10
+  currentY = doc.lastAutoTable.finalY + 4
 
   // TOTAL NETO resaltado
-  doc.setFontSize(12)
-  doc.text(`TOTAL NETO: $${formulario.value.totalGeneral}`, marginLeft + 10, currentY)
-  currentY += 15
+  doc.setFontSize(8)
+  doc.text(`TOTAL NETO: ${formatCurrency(formulario.value.totalGeneral)}`, marginLeft + 120, currentY)
+  currentY += 5
 
   // Resumen financiero como tabla
-  doc.setFontSize(14)
+  doc.setFontSize(10)
   doc.text('Resumen Financiero', marginLeft, currentY)
   currentY += 6
 
   const rf = formulario.value.resumenFinanciero
   if (rf) {
-    const resumenRows = [
-      ['Gastos SSO, adm y util 20%', `$${rf.gastosSSO}`],
-      ['Neto', `$${rf.neto}`],
-      ['IVA (19%)', `$${rf.iva}`],
-      ['TOTAL', `$${rf.totalFinal}`]
+      const resumenRows = [
+    ['Gastos SSO, adm y util 20%', formatCurrency(rf.gastosSSO)],
+    ['Neto', formatCurrency(rf.neto)],
+    ['IVA (19%)', formatCurrency(rf.iva)],
+    ['TOTAL', formatCurrency(rf.totalFinal)]
     ]
+
     autoTable(doc, {
       startY: currentY,
       head: [['Concepto', 'Monto']],
       body: resumenRows,
       margin: { left: marginLeft },
       theme: 'grid',
-      styles: { fontSize: 12 },
+      styles: { 
+        fontSize: 8,
+        cellPadding: 1,
+        overflow: 'ellipsize',
+        cellWidth: 'wrap'
+      },
       headStyles: { fillColor: [50, 50, 50] }
     })
-    currentY = doc.lastAutoTable.finalY + 10
+    currentY = doc.lastAutoTable.finalY + 7
   }
 
-  // Descripción
-if (formulario.value.textSections?.length) {
-  doc.setFontSize(14)
-  doc.text('Secciones Descriptivas:', marginLeft, currentY)
-  currentY += 8
-
-  doc.setFontSize(12)
-  formulario.value.textSections.forEach((section, i) => {
-    const lines = doc.splitTextToSize(`📌 ${section.content}`, 180)
-
-    if (currentY + lines.length * 7 > doc.internal.pageSize.height - 20) {
-      doc.addPage()
-      currentY = 20
-    }
-
-    doc.text(lines, marginLeft + 10, currentY)
-    currentY += lines.length * 7 + 5
-  })
-}
- else {
-  console.warn('La descripción está vacía o no es un string válido.')
-}
-
-
+  
 
   // Detalles
   if (formulario.value.detalles) {
-    doc.setFontSize(14)
+    doc.setFontSize(10)
     doc.text('Detalles de actividades:', marginLeft, currentY)
     currentY += 8
 
-    doc.setFontSize(12)
+    doc.setFontSize(8)
     const detallesLines = doc.splitTextToSize(formulario.value.detalles, 180)
 
     if (currentY + detallesLines.length * 7 > doc.internal.pageSize.height - 20) {
@@ -297,13 +370,31 @@ if (formulario.value.textSections?.length) {
     currentY += detallesLines.length * 7 + 5
   }
 
+      // Verificar si hay espacio suficiente para la firma, si no, crear nueva página
+    const signatureSpaceNeeded = 30
+    if (currentY + signatureSpaceNeeded > doc.internal.pageSize.height - 10) {
+      doc.addPage()
+      currentY = 20
+    }
+
+    // Línea de firma y etiqueta
+    doc.setFontSize(8)
+    doc.text('Firma Responsable', 20, currentY + 10)
+    doc.line(20, currentY + 12, 80, currentY + 12) // Línea horizontal para firma
+
+    // Puedes agregar otra firma si necesitas:
+    doc.text('Firma Cliente / Empresa', 120, currentY + 10)
+    doc.line(120, currentY + 12, 180, currentY + 12)
+
+
   doc.save(`${formulario.value.name || 'formulario'}.pdf`)
 }
 
 // Función para formatear fechas
-function formatDate(timestamp) {
-  if (!timestamp || !timestamp.toDate) return 'Fecha no disponible'
-  return timestamp.toDate().toLocaleDateString('es-CL', {
+function formatDate(isoString) {
+  if (!isoString) return 'Fecha no disponible'
+  const fecha = new Date(isoString)
+  return fecha.toLocaleDateString('es-CL', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -311,6 +402,13 @@ function formatDate(timestamp) {
     minute: '2-digit'
   })
 }
+
+function formatCurrency(value) {
+  if (isNaN(value)) return value
+  return `$ ${Number(value).toLocaleString('es-CL')}`
+}
+
+
 </script>
 
 
