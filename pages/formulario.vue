@@ -9,6 +9,29 @@
     <h1 class="text-3xl font-semibold mb-6 text-gray-200">Crear Nuevo Formulario</h1>
 
     <form @submit.prevent="handleSubmit" class="space-y-8">
+      <!-- NUEVO: Selector de Cliente -->
+
+
+      <div class="mb-6 bg-gray-800 p-4 rounded border border-gray-700 text-gray-200">
+        <label for="clientSelect" class="block mb-1 font-medium">Seleccionar Cliente</label>
+        <select
+          id="clientSelect"
+          v-model="selectedClientId"
+          @change="onClientChange"
+          class="w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-200"
+        >
+          <option value="">-- Selecciona un cliente --</option>
+          <option
+            v-for="clientes in clientes"
+            :key="clientes.id"
+            :value="clientes.id"
+          >
+            {{ clientes.name }}
+          </option>
+        </select>
+      </div>
+
+
       <!-- Nombre del formulario -->
       <div>
         <label for="formName" class="block text-gray-400 font-medium mb-2">Nombre del formulario</label>
@@ -36,13 +59,35 @@
           />
         </div>
         
-        <div>
+        <div class="mb-4">
           <label for="attentionName" class="block mb-1 font-medium">Atención a</label>
           <input
             id="attentionName"
             v-model="attentionName"
             type="text"
             placeholder="Ej: Juan Pérez"
+            class="w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500"
+          />
+        </div>
+
+        <div class="mb-4">
+          <label for="emailName" class="block mb-1 font-medium">Email</label>
+          <input
+            id="emailName"
+            v-model="emailName"
+            type="text"
+            placeholder="Ej: FME@gmail.com"
+            class="w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500"
+          />
+        </div>
+
+        <div class="mb-4">
+          <label for="contacName" class="block mb-1 font-medium">Contacto</label>
+          <input
+            id="contacName"
+            v-model="contacName"
+            type="text"
+            placeholder="Ej: FME@gmail.com"
             class="w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500"
           />
         </div>
@@ -119,29 +164,6 @@
       required
     />
 
-    <!-- Unidad de medida -->
-    <select
-      v-model="field.unit"
-      class="w-32 rounded border border-gray-700 bg-gray-800 px-3 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 mb-2 md:mb-0"
-    >
-      <option value="unidad">Unidad</option>
-      <option value="metro">Metro</option>
-      <option value="litro">Litro</option>
-      <option value="kg">Kg</option>
-      <option value="otro">Otro</option>
-    </select>
-
-    <!-- Valor unitario -->
-    <input
-      v-model.number="field.unitPrice"
-      type="number"
-      min="0"
-      step="0.01"
-      placeholder="Valor unitario"
-      class="w-40 rounded border border-gray-700 bg-gray-800 px-3 py-2 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-200 mb-2 md:mb-0"
-      required
-    />
-
     <!-- Cantidad con botones -->
     <div class="flex items-center space-x-2">
       
@@ -155,6 +177,33 @@
       />
       
     </div>
+
+    <!-- Unidad de medida -->
+    <select
+      v-model="field.unit"
+      class="w-32 rounded border border-gray-700 bg-gray-800 px-3 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 mb-2 md:mb-0"
+    >
+      <option value="unidad">Unidad</option>
+      <option value="metro">Metro</option>
+      <option value="litro">Litro</option>
+      <option value="kg">Kg</option>
+      <option value="otro">Otro</option>
+    </select>
+
+    
+
+    <!-- Valor unitario -->
+    <input
+      v-model.number="field.unitPrice"
+      type="number"
+      min="0"
+      step="0.01"
+      placeholder="Valor unitario"
+      class="w-40 rounded border border-gray-700 bg-gray-800 px-3 py-2 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-200 mb-2 md:mb-0"
+      required
+    />
+
+    
 
     <!-- Total por producto -->
     <div class="ml-auto text-gray-300 font-semibold">
@@ -218,10 +267,19 @@
 <div class="bg-gray-800 border border-gray-700 rounded p-4 mb-6">
   <h2 class="text-lg font-semibold text-gray-200 mb-3">Resumen Financiero</h2>
   <ul class="space-y-2 text-gray-300">
-    <li class="flex justify-between">
-      <span>Gastos SSO, adm y util 20%</span>
-      <span>$ {{ Math.round(gastosSSO || 0) }}</span>
+    <li class="flex justify-between items-center space-x-2">
+      <span>Gastos SSO, adm y util</span>
+      <input
+        type="number"
+        min="0"
+        max="100"
+        v-model.number="utilidadPorcentaje"
+        class="w-16 rounded border border-gray-700 bg-gray-900 px-2 py-1 text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+      />
+      <span>%</span>
+      <span class="ml-auto">$ {{ Math.round(gastosSSO || 0) }}</span>
     </li>
+
     <li class="flex justify-between">
       <span>Neto</span>
       <span>$ {{ Math.round(neto || 0) }}</span>
@@ -253,9 +311,45 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { db } from '~/firebase/firebase'
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, getDocs, addDoc, serverTimestamp, query, limit, orderBy   } from 'firebase/firestore'
+
+const clientes = ref([])
+const selectedClientId = ref('')
+
+const companyName = ref('')
+const attentionName = ref('')
+const emailName = ref('')
+const contacName = ref('')
+
+async function loadClients() {
+  try {
+    const querySnapshot = await getDocs(collection(db, 'clientes'))
+    clientes.value = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    console.log('Clientes cargados:', clientes.value)
+  } catch (error) {
+    console.error('Error cargando clientes:', error)
+  }
+}
+
+onMounted(loadClients)
+
+function onClientChange() {
+  const client = clientes.value.find(c => c.id === selectedClientId.value)
+  if (client) {
+    companyName.value = client.name || ''
+    attentionName.value = client.contactPerson || ''
+    emailName.value = client.email || ''
+    contacName.value = client.phone || ''
+  } else {
+    companyName.value = ''
+    attentionName.value = ''
+    emailName.value = ''
+    contacName.value = ''
+  }
+}
+
 
 const formName = ref('')
 const sections = ref([
@@ -284,10 +378,24 @@ function removeField(sectionIndex, fieldIndex) {
   sections.value[sectionIndex].fields.splice(fieldIndex, 1)
 }
 
+async function generarNumeroCotizacion() {
+  const q = query(collection(db, "formularios"), orderBy("cotizacionId", "desc"), limit(1));
+  const snapshot = await getDocs(q);
+
+  let nuevoId = 1;
+  if (!snapshot.empty) {
+    const ultimo = snapshot.docs[0].data();
+    nuevoId = (ultimo.cotizacionId || 0) + 1;
+  }
+
+  const version = "01"; // Siempre fijo en este prototipo
+  return { cotizacionId: nuevoId, version };
+}
+
 async function handleSubmit() {
   try {
     const formRef = collection(db, "formularios");
-
+    const { cotizacionId, version } = await generarNumeroCotizacion();
     // Preparar las secciones con totales
     const preparedSections = sections.value.map(section => {
       let totalSection = 0;
@@ -310,7 +418,7 @@ async function handleSubmit() {
     const totalGeneralValue = preparedSections.reduce((acc, section) => acc + section.totalSection, 0);
 
     // Totales para resumen financiero
-    const gastosSSOValue = totalGeneralValue * 0.2;
+    const gastosSSOValue = totalGeneralValue * (utilidadPorcentaje.value / 100);
     const netoValue = totalGeneralValue + gastosSSOValue;
     const ivaValue = netoValue * 0.19;
     const totalFinalValue = netoValue + ivaValue;
@@ -320,16 +428,21 @@ async function handleSubmit() {
       name: formName.value,
       companyName: companyName.value || '',
       attentionName: attentionName.value || '',
+      emailName: emailName.value || '',
+      contacName: contacName.value || '',
       textSections: textSections.value || [],
       sections: preparedSections,
       totalPorSeccion: preparedSections.map(s => s.totalSection),
       totalGeneral: totalGeneralValue,
+      utilidadPorcentaje: utilidadPorcentaje.value, // ← aquí se guarda
       resumenFinanciero: {
         gastosSSO: gastosSSOValue,
         neto: netoValue,
         iva: ivaValue,
         totalFinal: totalFinalValue
       },
+      cotizacionId, // 5 dígitos
+      version,      // "01"
       createdAt: serverTimestamp()
     });
 
@@ -346,6 +459,7 @@ async function handleSubmit() {
         fields: [{ label: '', unitPrice: 0, quantity: 1 }]
       }
     ];
+    utilidadPorcentaje.value = 20; // reset al valor inicial
   } catch (error) {
     console.error("Error al guardar el formulario:", error);
     alert("Hubo un error al guardar el formulario ❌");
@@ -376,8 +490,9 @@ const totalPorSeccion = computed(() =>
 const totalGeneral = computed(() =>
   totalPorSeccion.value.reduce((acc, val) => acc + val, 0)
 )
+const utilidadPorcentaje = ref(20) // valor inicial 20%
 
-const gastosSSO = computed(() => totalGeneral.value * 0.2)
+const gastosSSO = computed(() => totalGeneral.value * (utilidadPorcentaje.value / 100))
 const neto = computed(() => totalGeneral.value + gastosSSO.value)
 const iva = computed(() => neto.value * 0.19)
 const totalFinal = computed(() => neto.value + iva.value)
@@ -395,8 +510,7 @@ function removeTextSection(index) {
   textSections.value.splice(index, 1)
 }
 
-const companyName = ref('')
-const attentionName = ref('')
+
 
 
 </script>
