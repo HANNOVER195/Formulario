@@ -16,12 +16,19 @@
       >
         Ver Historial
       </NuxtLink>
-      
+
       <NuxtLink
         to="/clientes"
         class="block w-full bg-gray-800 hover:bg-gray-700 text-gray-200 py-3 rounded-md transition font-medium"
       >
         Clientes
+      </NuxtLink>
+
+      <NuxtLink
+        to="/ClienteCreate"
+        class="block w-full bg-gray-800 hover:bg-gray-700 text-gray-200 py-3 rounded-md transition font-medium"
+      >
+        Crear Cliente
       </NuxtLink>
     </div>
   </main>

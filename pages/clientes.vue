@@ -26,15 +26,17 @@
           </li>
         </ul>
 
-        <!-- Botón crear nuevo cliente -->
+        <!-- Botón crear nuevo cliente 
         <div class="p-3 border-t border-gray-800">
           <button
-            @click="modoCreacion = true; selectedCliente = null; form = { name: '', contactPerson: '', email: '', phone: '' }"
+            @click="abrirCreacion"
             class="w-full bg-blue-800 text-white py-2 px-3 rounded hover:bg-blue-900 transition"
-          >
+            >
             + Nuevo cliente
-          </button>
-        </div>
+            </button>
+
+
+        </div> -->
       </div>
 
       <!-- Panel derecho: Detalle del cliente -->
@@ -73,6 +75,18 @@
             </div>
             </div>
 
+            <!-- Formulario para crear cliente -->
+            <div v-if="modoCreacion" class="space-y-3">
+            <h2 class="text-2xl font-bold text-gray-300 mb-4">Crear nuevo cliente</h2>
+            <input v-model="form.name" class="border p-2 w-full rounded-lg text-white" placeholder="Nombre empresa" />
+            <input v-model="form.contactPerson" class="border p-2 w-full rounded-lg text-white" placeholder="Persona de contacto" />
+            <input v-model="form.email" class="border p-2 w-full rounded-lg text-white" placeholder="Email" />
+            <input v-model="form.phone" class="border p-2 w-full rounded-lg text-white" placeholder="Teléfono" />
+
+
+            </div>
+
+
             <!-- Espaciador flexible para empujar el botón de borrar hacia abajo -->
             <div class="flex-1"></div>
 
@@ -104,32 +118,30 @@
                 @click="confirmarBorrarCliente"
             >
                 Borrar
-            </button><!-- Modal de confirmación -->
-<!-- Modal de confirmación -->
-<div v-if="modalBorrar" class="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
-  <div
-    class="bg-[#0a2540] text-white rounded-xl p-6 w-96 shadow-lg pointer-events-auto"
-  >
-    <h3 class="text-lg font-bold mb-4">Seguro de borrar a este cliente?</h3>
-    <p class="mb-6">{{ selectedCliente.name }}</p>
-    <div class="flex justify-end space-x-4">
-      <button
-        class="px-4 py-2 rounded-lg bg-gray-300 text-black hover:bg-gray-400 transition"
-        @click="modalBorrar = false"
-      >
-        Cancelar
-      </button>
-      <button
-        class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 transition"
-        @click="confirmarBorrarCliente"
-      >
-        Borrar
-      </button>
-    </div>
-  </div>
-</div>
-
-
+            </button>
+                <!-- Modal de confirmación -->
+                <div v-if="modalBorrar" class="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
+                <div
+                    class="bg-[#0a2540] text-white rounded-xl p-6 w-96 shadow-lg pointer-events-auto"
+                >
+                    <h3 class="text-lg font-bold mb-4">Seguro de borrar a este cliente?</h3>
+                    <p class="mb-6">{{ selectedCliente.name }}</p>
+                    <div class="flex justify-end space-x-4">
+                    <button
+                        class="px-4 py-2 rounded-lg bg-gray-300 text-black hover:bg-gray-400 transition"
+                        @click="modalBorrar = false"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 transition"
+                        @click="confirmarBorrarCliente"
+                    >
+                        Borrar
+                    </button>
+                    </div>
+                </div>
+                </div>
             </div>
         </div>
         </div>
@@ -151,7 +163,8 @@ const clientes = ref([])
 const selectedCliente = ref(null)
 const modoEdicion = ref(false)
 const modoCreacion = ref(false)
-const form = ref({})
+const form = ref({ name: '', contactPerson: '', email: '', phone: '' })
+const modalBorrar = ref(false)
 
 // Cargar clientes
 onMounted(async () => {
@@ -168,6 +181,13 @@ const seleccionarCliente = (cliente) => {
   form.value = { ...cliente }
   modoEdicion.value = false
   modoCreacion.value = false
+}
+
+// Abrir formulario de creación
+const abrirCreacion = () => {
+  modoCreacion.value = true
+  selectedCliente.value = null
+  form.value = { name: '', contactPerson: '', email: '', phone: '' }
 }
 
 // Guardar cambios en cliente existente
@@ -194,16 +214,13 @@ const guardarCambios = async () => {
 const crearCliente = async () => {
   try {
     const clienteRef = await addDoc(collection(db, "clientes"), {
-      name: form.value.name,
-      contactPerson: form.value.contactPerson,
-      email: form.value.email,
-      phone: form.value.phone,
+      ...form.value,
       createdAt: serverTimestamp()
     })
     const nuevoCliente = { id: clienteRef.id, ...form.value }
     clientes.value.push(nuevoCliente)
-    seleccionarCliente(nuevoCliente)
     modoCreacion.value = false
+    selectedCliente.value = nuevoCliente
     alert("Cliente creado correctamente ✅")
   } catch (err) {
     console.error("Error al crear cliente:", err)
@@ -211,28 +228,21 @@ const crearCliente = async () => {
   }
 }
 
-// Estado del modal
-const modalBorrar = ref(false)
-
-// Función para abrir el modal
+// Abrir modal de borrar
 const borrarCliente = () => {
   if (!selectedCliente.value) return
   modalBorrar.value = true
 }
 
-// Función para borrar definitivamente
+// Confirmar borrado
 const confirmarBorrarCliente = async () => {
   if (!selectedCliente.value) return
-
   try {
     const clienteRef = doc(db, "clientes", selectedCliente.value.id)
     await deleteDoc(clienteRef)
-
-    // Actualizar lista local
     clientes.value = clientes.value.filter(c => c.id !== selectedCliente.value.id)
     selectedCliente.value = null
     modalBorrar.value = false
-
     alert("Cliente borrado correctamente ✅")
   } catch (err) {
     console.error("Error al borrar:", err)
@@ -240,5 +250,10 @@ const confirmarBorrarCliente = async () => {
   }
 }
 
+const crearNuevoClienteSeleccionado = () => {
+  selectedCliente.value = { esNuevo: true };
+  form.value = { name: '', contactPerson: '', email: '', phone: '' };
+  modoEdicion.value = false;
+};
 
 </script>
