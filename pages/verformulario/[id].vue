@@ -554,8 +554,9 @@ function formatDate(isoString) {
 
 function formatCurrency(value) {
   if (isNaN(value)) return value
-  return `$ ${Number(value).toLocaleString('es-CL')}`
+  return `$ ${Number(value).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
 }
+
 
 
 </script>
