@@ -6,7 +6,7 @@
   Volver a página principal
 </button>
   <main class="max-w-7xl mx-auto p-8 bg-gray-900 rounded-lg shadow-lg text-gray-300 mb-5">
-    <h1 class="text-3xl font-semibold mb-6 text-gray-200">Crear Nuevo Formulario</h1>
+    <h1 class="text-3xl font-semibold mb-6 text-gray-200">Editar Formulario</h1>
 
     <form @submit.prevent="handleSubmit" class="space-y-8">
       <!-- NUEVO: Selector de Cliente -->
@@ -318,10 +318,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { db } from '~/firebase/firebase'
-import { collection, getDocs, addDoc, serverTimestamp, query, limit, orderBy   } from 'firebase/firestore'
+import { collection, getDocs, doc, getDoc, updateDoc, query, orderBy, limit } from 'firebase/firestore'
+import { useRoute } from 'vue-router'
 
+const route = useRoute()
+const cotizacionId = route.params.id
+
+// CLIENTES
 const clientes = ref([])
 const selectedClientId = ref('')
 
@@ -331,19 +336,61 @@ const emailName = ref('')
 const contacName = ref('')
 const firmaTexto = ref('')
 
-
-async function loadClients() {
-  try {
-    const querySnapshot = await getDocs(collection(db, 'clientes'))
-    clientes.value = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-    console.log('Clientes cargados:', clientes.value)
-  } catch (error) {
-    console.error('Error cargando clientes:', error)
+// COTIZACIÓN
+const formName = ref('')
+const sections = ref([
+  {
+    title: '',
+    fields: [{ label: '', unitPrice: 0, quantity: 1, type: 'text', unit: 'unidad' }]
   }
+])
+const textSections = ref([{ content: '' }])
+const utilidadPorcentaje = ref(20)
+
+// TOTALS COMPUTED
+const totalPorSeccion = computed(() =>
+  sections.value.map(section =>
+    section.fields.reduce(
+      (acc, field) => acc + (Number(field.unitPrice) || 0) * (Number(field.quantity) || 0),
+      0
+    )
+  )
+)
+const totalGeneral = computed(() =>
+  totalPorSeccion.value.reduce((acc, val) => acc + val, 0)
+)
+const gastosSSO = computed(() => totalGeneral.value * (utilidadPorcentaje.value / 100))
+const neto = computed(() => totalGeneral.value + gastosSSO.value)
+const iva = computed(() => neto.value * 0.19)
+const totalFinal = computed(() => neto.value + iva.value)
+
+// CARGA CLIENTES
+async function loadClients() {
+  const querySnapshot = await getDocs(collection(db, 'clientes'))
+  clientes.value = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
 }
 
-onMounted(loadClients)
+// CARGA COTIZACIÓN POR ID
+async function loadCotizacion() {
+  const docRef = doc(db, 'formularios', cotizacionId)
+  const docSnap = await getDoc(docRef)
+  if (!docSnap.exists()) return
 
+  const data = docSnap.data()
+  formName.value = data.name
+  companyName.value = data.companyName
+  attentionName.value = data.attentionName
+  emailName.value = data.emailName
+  contacName.value = data.contacName
+  textSections.value = data.textSections || [{ content: '' }]
+  sections.value = data.sections || [
+    { title: '', fields: [{ label: '', unitPrice: 0, quantity: 1, unit: 'unidad' }] }
+  ]
+  utilidadPorcentaje.value = data.utilidadPorcentaje || 20
+  firmaTexto.value = data.firmaTexto || ''
+}
+
+// Cambio de cliente
 function onClientChange() {
   const client = clientes.value.find(c => c.id === selectedClientId.value)
   if (client) {
@@ -359,171 +406,51 @@ function onClientChange() {
   }
 }
 
+// ON MOUNTED
+onMounted(() => {
+  loadClients()
+  loadCotizacion()
+})
 
-const formName = ref('')
-const sections = ref([
-  {
-    title: '',
-    fields: [{ label: '', unitPrice: 0, quantity: 1, type: 'text', unit: 'unidad' }]
-  }
-])
+// FUNCIONES PARA SECCIONES Y CAMPOS
+function addSection() { sections.value.push({ title: '', fields: [{ label: '', unitPrice: 0, quantity: 1, type: 'text', unit: 'unidad' }] }) }
+function removeSection(index) { sections.value.splice(index, 1) }
+function addField(sectionIndex) { sections.value[sectionIndex].fields.push({ label: '', unitPrice: 0, quantity: 1, type: 'text', unit: 'unidad' }) }
+function removeField(sectionIndex, fieldIndex) { sections.value[sectionIndex].fields.splice(fieldIndex, 1) }
+function addTextSection() { textSections.value.push({ content: '' }) }
+function removeTextSection(index) { textSections.value.splice(index, 1) }
 
-function addSection() {
-  sections.value.push({
-    title: '',
-    fields: [{ label: '', unitPrice: 0, quantity: 1, type: 'text', unit: 'unidad' }]
-  })
-}
-
-function removeSection(index) {
-  sections.value.splice(index, 1)
-}
-
-function addField(sectionIndex) {
-  sections.value[sectionIndex].fields.push({ label: '', unitPrice: 0, quantity: 1, type: 'text', unit: 'unidad' })
-}
-
-function removeField(sectionIndex, fieldIndex) {
-  sections.value[sectionIndex].fields.splice(fieldIndex, 1)
-}
-
-async function generarNumeroCotizacion() {
-  const q = query(collection(db, "formularios"), orderBy("cotizacionId", "desc"), limit(1));
-  const snapshot = await getDocs(q);
-
-  let nuevoId = 1;
-  if (!snapshot.empty) {
-    const ultimo = snapshot.docs[0].data();
-    nuevoId = (ultimo.cotizacionId || 0) + 1;
-  }
-
-  const version = "01"; // Siempre fijo en este prototipo
-  return { cotizacionId: nuevoId, version };
-}
-
+// ACTUALIZAR COTIZACIÓN
 async function handleSubmit() {
   try {
-    const formRef = collection(db, "formularios");
-    const { cotizacionId, version } = await generarNumeroCotizacion();
-    // Preparar las secciones con totales
-    const preparedSections = sections.value.map(section => {
-      let totalSection = 0;
-      const productsWithTotal = section.fields.map(field => {
-        const productTotal = (field.unitPrice || 0) * (field.quantity || 0);
-        totalSection += productTotal;
-        return {
-          ...field,
-          total: productTotal
-        };
-      });
-      return {
-        title: section.title,
-        fields: productsWithTotal,
-        totalSection
-      };
-    });
-
-    // Total general sumando totales de secciones
-    const totalGeneralValue = preparedSections.reduce((acc, section) => acc + section.totalSection, 0);
-
-    // Totales para resumen financiero
-    const gastosSSOValue = totalGeneralValue * (utilidadPorcentaje.value / 100);
-    const netoValue = totalGeneralValue + gastosSSOValue;
-    const ivaValue = netoValue * 0.19;
-    const totalFinalValue = netoValue + ivaValue;
-
-    // Guardar en Firestore
-    await addDoc(formRef, {
+    const docRef = doc(db, 'formularios', cotizacionId)
+    await updateDoc(docRef, {
       name: formName.value,
-      companyName: companyName.value || '',
-      attentionName: attentionName.value || '',
-      emailName: emailName.value || '',
-      contacName: contacName.value || '',
-      textSections: textSections.value || [],
-      sections: preparedSections,
-      totalPorSeccion: preparedSections.map(s => s.totalSection),
-      totalGeneral: totalGeneralValue,
-      utilidadPorcentaje: utilidadPorcentaje.value, // ← aquí se guarda
+      companyName: companyName.value,
+      attentionName: attentionName.value,
+      emailName: emailName.value,
+      contacName: contacName.value,
+      textSections: textSections.value,
+      sections: sections.value,
+      totalPorSeccion: totalPorSeccion.value,
+      totalGeneral: totalGeneral.value,
+      utilidadPorcentaje: utilidadPorcentaje.value,
       resumenFinanciero: {
-        gastosSSO: gastosSSOValue,
-        neto: netoValue,
-        iva: ivaValue,
-        totalFinal: totalFinalValue
+        gastosSSO: gastosSSO.value,
+        neto: neto.value,
+        iva: iva.value,
+        totalFinal: totalFinal.value
       },
-      firmaTexto: firmaTexto.value,
-      cotizacionId, // 5 dígitos
-      version,      // "01"
-      createdAt: serverTimestamp()
-    });
-
-    alert("Formulario guardado exitosamente ✅");
-
-    // Resetear formulario
-    formName.value = '';
-    companyName.value = '';
-    attentionName.value = '';
-    textSections.value = [];
-    sections.value = [
-      {
-        title: '',
-        fields: [{ label: '', unitPrice: 0, quantity: 1 }]
-      }
-    ];
-    utilidadPorcentaje.value = 20; // reset al valor inicial
+      firmaTexto: firmaTexto.value
+    })
+    alert('Cotización actualizada ✅')
   } catch (error) {
-    console.error("Error al guardar el formulario:", error);
-    alert("Hubo un error al guardar el formulario ❌");
+    console.error(error)
+    alert('Error al actualizar ❌')
   }
 }
-
-
-
-function increaseQuantity(sectionIndex, fieldIndex) {
-  sections.value[sectionIndex].fields[fieldIndex].quantity++
-}
-
-function decreaseQuantity(sectionIndex, fieldIndex) {
-  if (sections.value[sectionIndex].fields[fieldIndex].quantity > 1) {
-    sections.value[sectionIndex].fields[fieldIndex].quantity--
-  }
-}
-
-const totalPorSeccion = computed(() =>
-  sections.value.map(section =>
-    section.fields.reduce(
-      (acc, field) => acc + (Number(field.unitPrice) || 0) * (Number(field.quantity) || 0),
-      0
-    )
-  )
-)
-
-const totalGeneral = computed(() =>
-  totalPorSeccion.value.reduce((acc, val) => acc + val, 0)
-)
-const utilidadPorcentaje = ref(20) // valor inicial 20%
-
-const gastosSSO = computed(() => totalGeneral.value * (utilidadPorcentaje.value / 100))
-const neto = computed(() => totalGeneral.value + gastosSSO.value)
-const iva = computed(() => neto.value * 0.19)
-const totalFinal = computed(() => neto.value + iva.value)
-
-
-const textSections = ref([
-  { content: '' }
-])
-
-function addTextSection() {
-  textSections.value.push({ content: '' })
-}
-
-function removeTextSection(index) {
-  textSections.value.splice(index, 1)
-}
-
-
-
-
 </script>
+
 
 <style>
 /* Chrome, Safari, Edge, Opera */

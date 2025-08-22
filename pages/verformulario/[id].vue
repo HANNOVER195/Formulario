@@ -1,16 +1,18 @@
 <template>
-  <button
-    @click="$router.push('/historial')"
-    class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded transition m-5"
-  >
+  <button @click="$router.push('/historial')"
+    class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded transition m-5">
     Volver al historial
   </button>
 
-  <main
-    ref="contentToPrint"
-    class="max-w-5xl mx-auto p-6 rounded-lg shadow-lg"
-    :style="{ backgroundColor: '#1a202c', color: '#e2e8f0' }"
-  >
+
+  <button @click="modoEdicion = true"
+    class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded transition m-5">
+    Editar
+  </button>
+
+
+  <main ref="contentToPrint" class="max-w-5xl mx-auto p-6 rounded-lg shadow-lg"
+    :style="{ backgroundColor: '#1a202c', color: '#e2e8f0' }">
     <h1 class="text-3xl font-bold mb-4 text-gray-200">{{ formulario?.name || 'Formulario' }}</h1>
 
     <!-- Información general -->
@@ -22,14 +24,11 @@
       <p><strong>Fecha de creación:</strong> {{ formatDate(formulario?.createdAt) }}</p>
     </div>
 
-
-    
-    
-
     <div v-if="formulario">
-      
-       <!-- Descripciones generales -->
-      <div v-if="formulario.descripcion || formulario.detalles" class="bg-gray-800 border border-gray-700 rounded p-4 mb-4">
+
+      <!-- Descripciones generales -->
+      <div v-if="formulario.descripcion || formulario.detalles"
+        class="bg-gray-800 border border-gray-700 rounded p-4 mb-4">
         <h2 class="text-lg font-semibold text-gray-100 mb-2">Detalles del formulario</h2>
         <p v-if="formulario.descripcion" class="mb-2"><strong>Descripción:</strong> {{ formulario.descripcion }}</p>
         <p v-if="formulario.detalles"><strong>Detalles de actividades:</strong> {{ formulario.detalles }}</p>
@@ -42,7 +41,7 @@
           <p class="text-gray-300">📌 {{ text.content }}</p>
         </div>
       </div>
-       <!-- Secciones de productos -->
+      <!-- Secciones de productos -->
       <div v-for="(section, index) in formulario.sections" :key="index" class="border border-gray-700 rounded p-4 mb-6">
         <h2 class="text-xl font-semibold text-gray-100 mb-3">{{ section.title || `ITEM ${index + 1}` }}</h2>
         <table class="w-full text-left text-gray-300 mb-3">
@@ -92,30 +91,205 @@
             <span>Gastos SSO, adm y util {{ formulario.utilidadPorcentaje || 20 }}%</span>
             <span>$ {{ formatNumber(formulario.resumenFinanciero?.gastosSSO) }}</span>
           </li>
-          <li class="flex justify-between"><span>Neto</span><span>$ {{ formatNumber(formulario.resumenFinanciero?.neto) }}</span></li>
-          <li class="flex justify-between"><span>IVA (19%)</span><span>$ {{ formatNumber(formulario.resumenFinanciero?.iva) }}</span></li>
+          <li class="flex justify-between"><span>Neto</span><span>$ {{ formatNumber(formulario.resumenFinanciero?.neto)
+          }}</span></li>
+          <li class="flex justify-between"><span>IVA (19%)</span><span>$ {{
+            formatNumber(formulario.resumenFinanciero?.iva) }}</span></li>
           <li class="flex justify-between font-bold border-t border-gray-600 pt-2 text-gray-100">
             <span>TOTAL</span><span>$ {{ formatNumber(formulario.resumenFinanciero?.totalFinal) }}</span>
           </li>
         </ul>
       </div>
+      <div class="bg-gray-800 border border-gray-700 rounded p-4 mb-4">
+        <p><strong>Firma:</strong> {{ formulario?.firmaTexto || '-' }}</p>
+      </div>
     </div>
 
-    
+
 
     <div v-else class="text-center text-gray-400">Cargando información...</div>
+
+
+    <!-- AREA DE EDICION DE PAGINA -->
+
+    <div v-if="modoEdicion"
+      class="fixed inset-0 backdrop-blur-md bg-opacity-50 flex justify-center items-start pt-20 z-50 overflow-auto">
+      <div class="bg-gray-800 text-gray-200 p-6 rounded-lg shadow-lg w-full max-w-5xl">
+        <!-- Inputs -->
+        <!-- Información general -->
+        <label class="block mt-2">Empresa:</label>
+        <input v-model="formEditable.companyName" type="text"
+          class="w-full p-2 rounded border border-gray-600 bg-gray-700 text-gray-200" />
+
+        <label class="block mt-2">Atención a:</label>
+        <input v-model="formEditable.attentionName" type="text"
+          class="w-full p-2 rounded border border-gray-600 bg-gray-700 text-gray-200" />
+
+        <label class="block mt-2">Email:</label>
+        <input v-model="formEditable.emailName" type="email"
+          class="w-full p-2 rounded border border-gray-600 bg-gray-700 text-gray-200" />
+
+        <label class="block mt-2">Teléfono:</label>
+        <input v-model="formEditable.contacName" type="text"
+          class="w-full p-2 rounded border border-gray-600 bg-gray-700 text-gray-200" />
+
+
+
+
+
+        <!-- Secciones descriptivas -->
+        <div v-for="(section, index) in formEditable.textSections" :key="'text-' + index" class="mt-4">
+          <label class="block mt-2">Sección descriptiva {{ index + 1 }}:</label>
+          <textarea v-model="section.content"
+            class="w-full p-2 rounded border border-gray-600 bg-gray-700 text-gray-200"></textarea>
+        </div>
+
+        <!-- Secciones con productos -->
+        <div v-for="(section, sIndex) in formEditable.sections" :key="'section-' + sIndex"
+          class="mt-4 border-t border-gray-600 pt-4">
+
+          <label class="block font-semibold">Sección {{ sIndex + 1 }}: {{ section.title }}</label>
+          <input v-model="section.title" type="text"
+            class="w-full p-2 rounded border border-gray-600 bg-gray-700 text-gray-200 mb-2" />
+
+          <!-- Encabezados de la tabla -->
+          <div class="grid grid-cols-8 gap-2 mb-1 text-gray-400 font-semibold text-sm">
+            <div class="col-span-4">Producto</div>
+            <div>Cantidad</div>
+            <div>Unidad</div>
+            <div>Valor Unitario</div>
+            <div>Total</div>
+          </div>
+
+          <!-- Campos de productos -->
+          <div v-for="(field, fIndex) in section.fields" :key="'field-' + fIndex" class="grid grid-cols-8 gap-2 mb-2">
+            <!-- Producto ocupa 2 columnas -->
+            <input v-model="field.label" type="text" placeholder="Producto"
+              class="col-span-4 p-2 rounded border border-gray-600 bg-gray-700 text-gray-200" />
+
+            <!-- Cantidad -->
+            <input v-model.number="field.quantity" @input="recalcularTotales(section)" type="number"
+              class="p-2 rounded border border-gray-600 bg-gray-700 text-gray-200" />
+
+            <!-- Unidad -->
+            <input v-model="field.unit" type="text" placeholder="Unidad"
+              class="p-2 rounded border border-gray-600 bg-gray-700 text-gray-200" />
+
+            <!-- Valor Unitario -->
+            <input v-model.number="field.unitPrice" @input="recalcularTotales(section)" type="number"
+              class="p-2 rounded border border-gray-600 bg-gray-700 text-gray-200" />
+
+            <!-- Total: ocupar 1 columna -->
+            <input :value="field.quantity * field.unitPrice" type="text" readonly
+              class="p-2 rounded border bg-gray-900 text-gray-200 font-semibold text-right" />
+          </div>
+
+
+          <!-- Botones Agregar / Eliminar producto -->
+          <div class="mt-2 flex justify-between">
+            <button type="button" @click="addField(sIndex)"
+              class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-gray-200">
+              + Agregar producto
+            </button>
+
+            <button type="button" @click="removeLastField(sIndex)"
+              class="px-2 py-1 bg-red-600 hover:bg-red-700 rounded text-white">
+              ✕
+            </button>
+          </div>
+
+          <div class="text-right font-bold mt-1">
+            Total Sección: {{ section.totalSection }}
+          </div>
+        </div>
+
+
+
+        <!-- Botones Agregar / Eliminar Sección -->
+        <div class="mt-4 flex justify-between">
+          <button type="button" @click="addSection()"
+            class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-gray-200">
+            + Agregar Sección
+          </button>
+
+          <button type="button" @click="removeLastSection()"
+            class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-white">
+            ✕ Eliminar Última Sección
+          </button>
+        </div>
+
+
+        <!-- Totales -->
+        <label class="block mt-2">Total por sección (array):</label>
+        <div v-for="(total, index) in totalPorSeccion" :key="index">
+          <input type="text" :value="total" readonly
+            class="w-full p-2 rounded border border-gray-600 bg-gray-700 text-gray-200 mb-2" />
+        </div>
+
+        <label class="block mt-2">Total general:</label>
+        <input v-model="formEditable.totalGeneral" type="number" readonly
+          class="w-full p-2 rounded border border-gray-600 bg-gray-700 text-gray-200" />
+
+        <label class="block mt-2">Porcentaje de utilidad:</label>
+        <input v-model="formEditable.utilidadPorcentaje" type="number"
+          class="w-full p-2 rounded border border-gray-600 bg-gray-700 text-gray-200" />
+
+        <!-- Resumen financiero -->
+        <div class="mt-4 border-t border-gray-600 pt-4">
+          <label class="block mt-2">Gastos SSO:</label>
+          <input :value="formatNumber(formEditable.resumenFinanciero.gastosSSO)" type="text" readonly
+            class="w-full p-2 rounded border border-gray-600 bg-gray-700 text-gray-200" />
+
+          <label class="block mt-2">Neto:</label>
+          <input :value="formatNumber(formEditable.resumenFinanciero.neto)" type="text" readonly
+            class="w-full p-2 rounded border border-gray-600 bg-gray-700 text-gray-200" />
+
+          <label class="block mt-2">IVA:</label>
+          <input :value="formatNumber(formEditable.resumenFinanciero.iva)" type="text" readonly
+            class="w-full p-2 rounded border border-gray-600 bg-gray-700 text-gray-200" />
+
+          <label class="block mt-2">Total final:</label>
+          <input :value="formatNumber(formEditable.resumenFinanciero.totalFinal)" type="text" readonly
+            class="w-full p-2 rounded border border-gray-600 bg-gray-700 text-gray-200" />
+        </div>
+
+
+        <label class="block mt-2">Firma:</label>
+        <input v-model="formEditable.firmaTexto" type="text"
+          class="w-full p-2 rounded border border-gray-600 bg-gray-700 text-gray-200" />
+
+        <!-- Botones de acción -->
+        <div class="flex justify-end gap-2 mt-4">
+          <button @click="modoEdicion = false"
+            class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded">Cancelar</button>
+          <button @click="guardarCambios()"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+
+
+
+
   </main>
 
   <!-- Botón para exportar PDF -->
   <div class="max-w-5xl mx-auto p-6 flex justify-end">
-    <button
-      @click="exportPDF"
-      class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded"
-      :disabled="!formulario"
-    >
+    <button @click="exportPDF" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded"
+      :disabled="!formulario">
       Exportar a PDF
     </button>
   </div>
+
+
+
+
+
+
+
+
+
 </template>
 
 
@@ -127,14 +301,14 @@ definePageMeta({
 
 
 import { useRoute } from 'vue-router'
-import { doc, getDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db } from '~/firebase/firebase'
 
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
 const route = useRoute()
-
+const hola = "Hola mundo";
 function formatNumber(value) {
   if (value == null || isNaN(value)) return '0'
   return Number(value).toLocaleString('es-CL', { maximumFractionDigits: 0 })
@@ -163,7 +337,9 @@ function sanitizeFormulario(data) {
         unit: field.unit ?? '',
         unitPrice: field.unitPrice ?? 0,
         quantity: field.quantity ?? 0,
-        total: field.total ?? 0
+        get total() {
+          return (Number(this.unitPrice) || 0) * (Number(this.quantity) || 0)
+        }
       })) ?? []
     })) ?? [],
     totalPorSeccion: data.totalPorSeccion ?? [],
@@ -175,7 +351,8 @@ function sanitizeFormulario(data) {
       iva: data.resumenFinanciero?.iva ?? 0,
       totalFinal: data.resumenFinanciero?.totalFinal ?? 0,
       fechaPago: toISO(data.resumenFinanciero?.fechaPago)
-    }
+    },
+    firmaTexto: data.firmaTexto ?? '',
   }
 }
 
@@ -226,96 +403,96 @@ async function exportPDF() {
   const logoBase64 = await loadImageAsBase64('/BitnetsLogo.jpg')
 
 
-// Título principal
-doc.setFontSize(8)
-doc.setFont('helvetica', 'bold')
-doc.text('BITNETS SPA', marginLeft, currentY)
+  // Título principal
+  doc.setFontSize(8)
+  doc.setFont('helvetica', 'bold')
+  doc.text('BITNETS SPA', marginLeft, currentY)
 
-// Logo a la derecha (usar imagen en Base64 o data:image/png;base64,...)
-// Ajusta las coordenadas y tamaño según tu logo
-doc.addImage(logoBase64, 'PNG', 160, currentY - 1, 30, 10)
+  // Logo a la derecha (usar imagen en Base64 o data:image/png;base64,...)
+  // Ajusta las coordenadas y tamaño según tu logo
+  doc.addImage(logoBase64, 'PNG', 160, currentY - 1, 30, 10)
 
-currentY += 4
+  currentY += 4
 
-// Subtítulo o detalles
-doc.setFontSize(8)
-doc.setFont('helvetica', 'normal')
-doc.text(`Servicios Integrales en Tecnologia`, marginLeft, currentY)
-currentY += 3
-doc.text(`RUT: 76.504.212-7`, marginLeft, currentY)
-currentY += 3
-doc.text(`Caulin s/n - ANCUD`, marginLeft, currentY)
-currentY += 3
+  // Subtítulo o detalles
+  doc.setFontSize(8)
+  doc.setFont('helvetica', 'normal')
+  doc.text(`Servicios Integrales en Tecnologia`, marginLeft, currentY)
+  currentY += 3
+  doc.text(`RUT: 76.504.212-7`, marginLeft, currentY)
+  currentY += 3
+  doc.text(`Caulin s/n - ANCUD`, marginLeft, currentY)
+  currentY += 3
 
-// Línea divisoria
-doc.setLineWidth(0.5)
-doc.line(marginLeft, currentY, 190, currentY)
+  // Línea divisoria
+  doc.setLineWidth(0.5)
+  doc.line(marginLeft, currentY, 190, currentY)
 
-currentY += 10
+  currentY += 10
 
-  
+
   // Título principal
   doc.setFontSize(12)
   doc.text(formulario.value.name || 'Formulario', marginLeft, currentY)
   currentY += 10
 
   // Datos generales
+  doc.setFontSize(8)
+
+  if (formulario.value.companyName) {
+    doc.text(`Empresa: ${formulario.value.companyName}`, marginLeft, currentY)
+    currentY += 3
+  }
+  if (formulario.value.attentionName) {
+    doc.text(`Atención: ${formulario.value.attentionName}`, marginLeft, currentY)
+    currentY += 3
+  }
+  if (formulario.value.emailName) {
+    doc.text(`Email: ${formulario.value.emailName}`, marginLeft, currentY)
+    currentY += 3
+  }
+  if (formulario.value.contacName) {
+    doc.text(`Teléfono: ${formulario.value.contacName}`, marginLeft, currentY)
+    currentY += 3
+  }
+  if (formulario.value.createdAt) {
+    const fecha = new Date(formulario.value.createdAt).toLocaleString('es-CL')
+    doc.text(`Fecha de creación: ${fecha}`, marginLeft, currentY)
+    currentY += 3
+  }
+
+
+  // Descripción
+
+  if (formulario.value.textSections?.length) {
     doc.setFontSize(8)
 
-    if (formulario.value.companyName) {
-      doc.text(`Empresa: ${formulario.value.companyName}`, marginLeft, currentY)
-      currentY += 3
-    }
-    if (formulario.value.attentionName) {
-      doc.text(`Atención: ${formulario.value.attentionName}`, marginLeft, currentY)
-      currentY += 3
-    }
-    if (formulario.value.emailName) {
-      doc.text(`Email: ${formulario.value.emailName}`, marginLeft, currentY)
-      currentY += 3
-    }
-    if (formulario.value.contacName) {
-      doc.text(`Teléfono: ${formulario.value.contacName}`, marginLeft, currentY)
-      currentY += 3
-    }
-    if (formulario.value.createdAt) {
-      const fecha = new Date(formulario.value.createdAt).toLocaleString('es-CL')
-      doc.text(`Fecha de creación: ${fecha}`, marginLeft, currentY)
-      currentY += 3
-    }
+    currentY += 3
 
+    doc.setFontSize(8)
 
-    // Descripción
-   
-    if (formulario.value.textSections?.length) {
-      doc.setFontSize(8)
-      
-      currentY += 3
+    const pageHeight = doc.internal.pageSize.height
+    const maxWidth = 180
+    const lineHeight = 4.5
+    const padding = 1
 
-      doc.setFontSize(8)
+    formulario.value.textSections.forEach((section) => {
+      const text = section.content
+      const lines = doc.splitTextToSize(text, maxWidth)
 
-      const pageHeight = doc.internal.pageSize.height
-      const maxWidth = 180
-      const lineHeight = 4.5
-      const padding = 1
+      lines.forEach((line) => {
+        if (currentY + lineHeight > pageHeight - padding) {
+          doc.addPage()
+          currentY = padding
+        }
 
-      formulario.value.textSections.forEach((section) => {
-        const text = section.content
-        const lines = doc.splitTextToSize(text, maxWidth)
-
-        lines.forEach((line) => {
-          if (currentY + lineHeight > pageHeight - padding) {
-            doc.addPage()
-            currentY = padding
-          }
-
-          doc.text(line, marginLeft, currentY)
-          currentY += lineHeight
-        })
-
-        currentY += 2 // Espacio extra entre secciones
+        doc.text(line, marginLeft, currentY)
+        currentY += lineHeight
       })
-    }
+
+      currentY += 2 // Espacio extra entre secciones
+    })
+  }
 
   // Secciones con productos
   formulario.value.sections.forEach((section, i) => {
@@ -336,43 +513,43 @@ currentY += 10
 
 
     autoTable(doc, {
-  startY: currentY,
-  head: [tableColumn],
-  body: tableRows,
-  margin: { left: marginLeft },
-  theme: 'grid',
-  styles: { 
-    fontSize: 8,
-    cellPadding: 0.5,
-    overflow: 'ellipsize',
-    cellWidth: 'wrap'
-  },
-  headStyles: { 
-    fillColor: [30, 30, 30]
-  },
-  columnStyles: {
-    '*': { cellPadding: 0.5 },
-    0: { halign: 'right', cellWidth: 15 },  // Cantidad
-    1: { halign: 'right', cellWidth: 15 },  // Unidad
-    2: { halign: 'left' },                   // Detalle (sin ancho fijo)
-    3: { halign: 'right', cellWidth: 25 },  // Valor Unitario
-    4: { halign: 'right', cellWidth: 25 },  // Total
-  },
-  didParseCell: function (data) {
-    if (data.section === 'head') {
-      if (data.column.index === 2) {
-        data.cell.styles.halign = 'left' // Detalle sigue a la izquierda
-      } else {
-        data.cell.styles.halign = 'right' // Todas las demás columnas a la derecha
+      startY: currentY,
+      head: [tableColumn],
+      body: tableRows,
+      margin: { left: marginLeft },
+      theme: 'grid',
+      styles: {
+        fontSize: 8,
+        cellPadding: 0.5,
+        overflow: 'ellipsize',
+        cellWidth: 'wrap'
+      },
+      headStyles: {
+        fillColor: [30, 30, 30]
+      },
+      columnStyles: {
+        '*': { cellPadding: 0.5 },
+        0: { halign: 'right', cellWidth: 15 },  // Cantidad
+        1: { halign: 'right', cellWidth: 15 },  // Unidad
+        2: { halign: 'left' },                   // Detalle (sin ancho fijo)
+        3: { halign: 'right', cellWidth: 25 },  // Valor Unitario
+        4: { halign: 'right', cellWidth: 25 },  // Total
+      },
+      didParseCell: function (data) {
+        if (data.section === 'head') {
+          if (data.column.index === 2) {
+            data.cell.styles.halign = 'left' // Detalle sigue a la izquierda
+          } else {
+            data.cell.styles.halign = 'right' // Todas las demás columnas a la derecha
+          }
+        }
       }
-    }
-  }
-})
+    })
 
 
 
     currentY = doc.lastAutoTable.finalY + 5
-     // TOTAL NETO alineado a la derecha sin salirse del margen
+    // TOTAL NETO alineado a la derecha sin salirse del margen
     const rightMargin = 14 // margen desde el borde derecho
     doc.setFontSize(8)
     doc.text(
@@ -390,7 +567,7 @@ currentY += 10
   currentY += 4
 
   // Tabla Total de servicio
-    const totalServicioRows = formulario.value.totalPorSeccion.map((total, i) => [
+  const totalServicioRows = formulario.value.totalPorSeccion.map((total, i) => [
     formulario.value.sections[i]?.title || `Sección ${i + 1}`,
     formatCurrency(total)
   ])
@@ -401,7 +578,7 @@ currentY += 10
     body: totalServicioRows,
     margin: { left: marginLeft },
     theme: 'grid',
-    styles: { 
+    styles: {
       fontSize: 8,
       cellPadding: 0.5,
       overflow: 'ellipsize',
@@ -409,21 +586,22 @@ currentY += 10
     },
     headStyles: { fillColor: [50, 50, 50] },
     columnStyles: {
-        
-        1: { halign: 'right', cellWidth: 30 }, // Unidad
 
-  }})
+      1: { halign: 'right', cellWidth: 30 }, // Unidad
+
+    }
+  })
   currentY = doc.lastAutoTable.finalY + 4
 
-     // TOTAL NETO alineado a la derecha sin salirse del margen
-    const rightMargin = 14 // margen desde el borde derecho
-    doc.setFontSize(8)
-    doc.text(
-      `SUBTOTALES: ${formatCurrency(formulario.value.totalGeneral)}`,
-      doc.internal.pageSize.width - rightMargin,
-      currentY,
-      { align: 'right' }
-    )
+  // TOTAL NETO alineado a la derecha sin salirse del margen
+  const rightMargin = 14 // margen desde el borde derecho
+  doc.setFontSize(8)
+  doc.text(
+    `SUBTOTALES: ${formatCurrency(formulario.value.totalGeneral)}`,
+    doc.internal.pageSize.width - rightMargin,
+    currentY,
+    { align: 'right' }
+  )
 
 
   currentY += 5
@@ -440,11 +618,11 @@ currentY += 10
 
 
   if (rf) {
-      const resumenRows = [
-    [`Gastos SSO, adm y util ${utilidad}%`, formatCurrency(rf.gastosSSO)],
-    ['Neto', formatCurrency(rf.neto)],
-    ['IVA (19%)', formatCurrency(rf.iva)],
-    ['TOTAL', formatCurrency(rf.totalFinal)]
+    const resumenRows = [
+      [`Gastos SSO, adm y util ${utilidad}%`, formatCurrency(rf.gastosSSO)],
+      ['Neto', formatCurrency(rf.neto)],
+      ['IVA (19%)', formatCurrency(rf.iva)],
+      ['TOTAL', formatCurrency(rf.totalFinal)]
     ]
 
     autoTable(doc, {
@@ -453,7 +631,7 @@ currentY += 10
       body: resumenRows,
       margin: { left: marginLeft },
       theme: 'grid',
-      styles: { 
+      styles: {
         fontSize: 8,
         cellPadding: 1,
         overflow: 'ellipsize',
@@ -463,11 +641,12 @@ currentY += 10
       columnStyles: {
         0: { halign: 'right' }, // Unidad
         1: { halign: 'right', cellWidth: 30 }, // Total
-    }})
+      }
+    })
     currentY = doc.lastAutoTable.finalY + 7
   }
 
-  
+
 
   // Detalles
   if (formulario.value.detalles) {
@@ -487,54 +666,54 @@ currentY += 10
     currentY += detallesLines.length * 7 + 5
   }
 
-      // Verificar si hay espacio suficiente para la firma, si no, crear nueva página
-    const signatureSpaceNeeded = 30
-    if (currentY + signatureSpaceNeeded > doc.internal.pageSize.height - 10) {
-      doc.addPage()
-      currentY = 25
-    }
+  // Verificar si hay espacio suficiente para la firma, si no, crear nueva página
+  const signatureSpaceNeeded = 30
+  if (currentY + signatureSpaceNeeded > doc.internal.pageSize.height - 10) {
+    doc.addPage()
+    currentY = 25
+  }
 
-    // Línea de firma y etiqueta
-    const pageWidth = doc.internal.pageSize.getWidth()
-    const marginRight = 80
-    const text = 'BITNETS spa'
-    const textWidth = doc.getTextWidth(text)
-    const posX = pageWidth - marginRight - textWidth
+  // Línea de firma y etiqueta
+  const pageWidth = doc.internal.pageSize.getWidth()
+  const marginRight = 80
+  const text = formulario.value.firmaTexto
+  const textWidth = doc.getTextWidth(text)
+  const posX = pageWidth - marginRight - textWidth
 
-    doc.setFontSize(8)
+  doc.setFontSize(8)
 
-    // Línea de firma (por ejemplo, 60 unidades de ancho)
-    doc.line(posX, currentY + 12, posX + 60, currentY + 12)
+  // Línea de firma (por ejemplo, 60 unidades de ancho)
+  doc.line(posX, currentY + 12, posX + 60, currentY + 12)
 
-    // Texto debajo de la línea (4 unidades más abajo)
-    doc.text(text, posX+10, currentY + 16)
+  // Texto debajo de la línea (4 unidades más abajo)
+  doc.text(text, posX + 10, currentY + 16)
 
 
 
- 
 
-    // === Pie de página ===
-    const pageHeight = doc.internal.pageSize.height
-    doc.setFontSize(7)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(100)
-    doc.text(
-      'Documento BITNETS SpA - Versión 1.0',
-      marginLeft,
-      pageHeight - 10
-    )
-    const numeroFormateado = `${String(doc.cotizacionId).padStart(5, "0")}${doc.version || "01"}`;
-    doc.text(
-  `Cotización: ${formulario.value.cotizacionId || '00000'}${formulario.value.version || '01'}`,
-  doc.internal.pageSize.width - marginRight,
-  pageHeight - 10,
-  { align: 'right' }
-)
 
-    currentY += 0
+  // === Pie de página ===
+  const pageHeight = doc.internal.pageSize.height
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(100)
+  doc.text(
+    'Documento BITNETS SpA - Versión 1.0',
+    marginLeft,
+    pageHeight - 10
+  )
+  const numeroFormateado = `${String(doc.cotizacionId).padStart(5, "0")}${doc.version || "01"}`;
+  doc.text(
+    `Cotización: ${formulario.value.cotizacionId || '00000'}${formulario.value.version || '01'}`,
+    doc.internal.pageSize.width - marginRight,
+    pageHeight - 10,
+    { align: 'right' }
+  )
 
-    
-    
+  currentY += 0
+
+
+
 
   doc.save(`${formulario.value.name || 'formulario'}.pdf`)
 }
@@ -557,8 +736,191 @@ function formatCurrency(value) {
   return `$ ${Number(value).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
 }
 
+const formularios = ref([])
+
+async function loadFormularios() {
+  const querySnapshot = await getDocs(collection(db, 'formularios'))
+  formularios.value = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+}
+
+import { onMounted, ref } from 'vue'
+
+onMounted(async () => {
+  const id = route.params.id
+  const docRef = doc(db, 'formularios', id)
+  const docSnap = await getDoc(docRef)
+
+  if (docSnap.exists()) {
+    formularios.value = [{ id: docSnap.id, ...docSnap.data() }]
+  } else {
+    console.log('Formulario no encontrado')
+  }
+})
+
+
+// AREA DE EDICION DE PAGINA
+
+const modoEdicion = ref(false)
+
+// Usar reactive para que Vue detecte cambios internos
+const formEditable = reactive({
+  sections: [
+    {
+      title: '',
+      totalSection: 0, // ✅ inicializado desde el inicio
+      fields: [
+        { label: '', unitPrice: 0, quantity: 1, type: 'text', unit: 'unidad', total: 0 }
+      ]
+    }
+  ],
+  totalGeneral: 0,
+  utilidadPorcentaje: 20,
+  resumenFinanciero: {
+    gastosSSO: 0,
+    neto: 0,
+    iva: 0,
+    totalFinal: 0,
+    fechaPago: ''
+  },
+  firmaTexto: ''
+})
+
+
+const cargarFormulario = async () => {
+  const docRef = doc(db, 'formularios', route.params.id)
+  const docSnap = await getDoc(docRef)
+
+  if (docSnap.exists()) {
+    const data = sanitizeFormulario(docSnap.data())
+    Object.assign(formEditable, data) // Mantener reactividad
+  } else {
+    console.log('Formulario no encontrado')
+  }
+}
+
+onMounted(() => {
+  cargarFormulario()
+})
+
+
+
+// Funciones para agregar productos y secciones
+function addField(sectionIndex) {
+  formEditable.sections[sectionIndex].fields.push({ label: '', unitPrice: 0, quantity: 1, type: 'text', unit: 'unidad' })
+}
+
+
+
+// Computeds para totales
+const totalPorSeccion = computed(() =>
+  (formEditable.sections || []).map(section =>
+    (section.fields || []).reduce(
+      (acc, field) => acc + (Number(field.unitPrice) || 0) * (Number(field.quantity) || 0),
+      0
+    )
+  )
+)
+
+const totalGeneral = computed(() =>
+  totalPorSeccion.value.reduce((acc, val) => acc + val, 0)
+)
+
+// Actualización automática del resumen financiero
+watch(
+  [totalGeneral, () => formEditable.utilidadPorcentaje],
+  () => {
+    formEditable.totalGeneral = totalGeneral.value
+    formEditable.resumenFinanciero.gastosSSO = totalGeneral.value * (formEditable.utilidadPorcentaje / 100)
+    formEditable.resumenFinanciero.neto = totalGeneral.value + formEditable.resumenFinanciero.gastosSSO
+    formEditable.resumenFinanciero.iva = formEditable.resumenFinanciero.neto * 0.19
+    formEditable.resumenFinanciero.totalFinal = formEditable.resumenFinanciero.neto + formEditable.resumenFinanciero.iva
+  },
+  { immediate: true }
+)
+
+function recalcularTotales(section) {
+  // Actualiza el total de la sección
+  section.totalSection = section.fields.reduce(
+    (acc, field) => acc + (Number(field.quantity) || 0) * (Number(field.unitPrice) || 0),
+    0
+  )
+
+  // Actualiza total general sumando todas las secciones
+  formEditable.totalGeneral = formEditable.sections.reduce(
+    (acc, s) => acc + (s.totalSection || 0),
+    0
+  )
+
+  // Actualiza resumen financiero
+  formEditable.resumenFinanciero.gastosSSO = formEditable.totalGeneral * (formEditable.utilidadPorcentaje / 100)
+  formEditable.resumenFinanciero.neto = formEditable.totalGeneral + formEditable.resumenFinanciero.gastosSSO
+  formEditable.resumenFinanciero.iva = formEditable.resumenFinanciero.neto * 0.19
+  formEditable.resumenFinanciero.totalFinal = formEditable.resumenFinanciero.neto + formEditable.resumenFinanciero.iva
+}
+
+const guardarCambios = async () => {
+  try {
+    // Recalcular totalPorSeccion antes de guardar
+    const totalPorSeccion = formEditable.sections.map(s => s.totalSection || 0)
+
+    // Recalcular totalGeneral también
+    const totalGeneral = totalPorSeccion.reduce((acc, val) => acc + val, 0)
+
+    // Actualizar resumen financiero
+    const gastosSSO = totalGeneral * (formEditable.utilidadPorcentaje / 100)
+    const neto = totalGeneral + gastosSSO
+    const iva = neto * 0.19
+    const totalFinal = neto + iva
+
+    // Guardar en Firestore
+    await setDoc(doc(db, 'formularios', route.params.id), {
+      ...formEditable,
+      totalPorSeccion,
+      totalGeneral,
+      resumenFinanciero: {
+        gastosSSO,
+        neto,
+        iva,
+        totalFinal,
+        fechaPago: formEditable.resumenFinanciero.fechaPago
+      }
+    }, { merge: true })
+
+    console.log('Formulario guardado correctamente')
+    modoEdicion.value = false
+  } catch (err) {
+    console.error('Error al guardar:', err)
+  }
+}
+
+function addSection() {
+  formEditable.sections.push({
+    title: '',
+    fields: [{ label: '', unitPrice: 0, quantity: 1, unit: 'unidad', total: 0 }],
+    totalSection: 0
+  })
+}
+
+function removeSection(index) {
+  formEditable.sections.splice(index, 1)
+}
+
+function removeLastField(sectionIndex) {
+  const fields = formEditable.sections[sectionIndex].fields
+  if (fields.length > 0) {
+    fields.pop()  // Elimina el último producto
+    recalcularTotales(formEditable.sections[sectionIndex])
+  }
+}
+
+function removeLastSection() {
+  if (formEditable.sections.length > 0) {
+    formEditable.sections.pop()  // Elimina la última sección creada
+  }
+}
+
+
+
 
 
 </script>
-
-
