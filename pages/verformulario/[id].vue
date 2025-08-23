@@ -117,6 +117,12 @@
       <div class="bg-gray-800 text-gray-200 p-6 rounded-lg shadow-lg w-full max-w-5xl">
         <!-- Inputs -->
         <!-- Información general -->
+        <!-- Campo para el nombre del formulario -->
+        <label class="block mt-2">Nombre del formulario:</label>
+        <input v-model="formEditable.name" type="text"
+          class="w-full p-2 rounded border border-gray-600 bg-gray-700 text-gray-200" />
+
+
         <label class="block mt-2">Empresa:</label>
         <input v-model="formEditable.companyName" type="text"
           class="w-full p-2 rounded border border-gray-600 bg-gray-700 text-gray-200" />
@@ -764,6 +770,7 @@ const modoEdicion = ref(false)
 
 // Usar reactive para que Vue detecte cambios internos
 const formEditable = reactive({
+  name: '',
   sections: [
     {
       title: '',
