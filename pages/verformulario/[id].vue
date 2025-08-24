@@ -1,14 +1,21 @@
 <template>
   <button @click="$router.push('/historial')"
-    class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded transition m-5">
+    class="bg-green-600 hover:bg-green-800 text-white font-semibold py-2 px-4 rounded transition m-5">
     Volver al historial
   </button>
 
 
   <button @click="modoEdicion = true"
-    class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded transition m-5">
+    class="bg-yellow-600 hover:bg-yellow-800 text-white font-semibold py-2 px-4 rounded transition m-5">
     Editar
   </button>
+
+  <button 
+  @click="eliminarFormulario"
+  class="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded transition m-5">
+  🗑️ Eliminar Formulario
+</button>
+
 
 
   <main ref="contentToPrint" class="max-w-5xl mx-auto p-6 rounded-lg shadow-lg"
@@ -92,7 +99,7 @@
             <span>$ {{ formatNumber(formulario.resumenFinanciero?.gastosSSO) }}</span>
           </li>
           <li class="flex justify-between"><span>Neto</span><span>$ {{ formatNumber(formulario.resumenFinanciero?.neto)
-          }}</span></li>
+              }}</span></li>
           <li class="flex justify-between"><span>IVA (19%)</span><span>$ {{
             formatNumber(formulario.resumenFinanciero?.iva) }}</span></li>
           <li class="flex justify-between font-bold border-t border-gray-600 pt-2 text-gray-100">
@@ -307,8 +314,11 @@ definePageMeta({
 
 
 import { useRoute } from 'vue-router'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore'
 import { db } from '~/firebase/firebase'
+
+
+
 
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
@@ -462,10 +472,16 @@ async function exportPDF() {
     currentY += 3
   }
   if (formulario.value.createdAt) {
-    const fecha = new Date(formulario.value.createdAt).toLocaleString('es-CL')
-    doc.text(`Fecha de creación: ${fecha}`, marginLeft, currentY)
-    currentY += 3
-  }
+  const fechaObj = new Date(formulario.value.createdAt)
+  const dia = String(fechaObj.getDate()).padStart(2, '0')
+  const mes = String(fechaObj.getMonth() + 1).padStart(2, '0') // +1 porque enero = 0
+  const año = String(fechaObj.getFullYear()).slice(-4) // solo últimos 2 dígitos
+
+  const fecha = `${dia}-${mes}-${año}`
+  doc.text(`Fecha de creación: ${fecha}`, marginLeft, currentY)
+  currentY += 3
+}
+
 
 
   // Descripción
@@ -926,7 +942,19 @@ function removeLastSection() {
   }
 }
 
+async function eliminarFormulario() {
+  try {
+    const confirmacion = confirm("⚠️ ¿Estás seguro de que quieres borrar este formulario? Esta acción no se puede deshacer.")
+    if (!confirmacion) return
 
+    await deleteDoc(doc(db, "formularios", route.params.id))
+    alert("Formulario eliminado correctamente ✅")
+    router.push("/historial") // redirige al historial o donde prefieras
+  } catch (error) {
+    console.error("Error al eliminar el formulario:", error)
+    alert("Ocurrió un error al eliminar el formulario ❌")
+  }
+}
 
 
 

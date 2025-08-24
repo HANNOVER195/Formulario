@@ -1,7 +1,7 @@
 <template>
   <button
     @click="$router.push('/menu')"
-    class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded transition m-5"
+    class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded transition m-5"
   >
     Volver a página principal
   </button>
