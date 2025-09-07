@@ -809,15 +809,18 @@ const formEditable = reactive({
 })
 
 
+
 const cargarFormulario = async () => {
   const docRef = doc(db, 'formularios', route.params.id)
   const docSnap = await getDoc(docRef)
 
   if (docSnap.exists()) {
     const data = sanitizeFormulario(docSnap.data())
-    Object.assign(formEditable, data) // Mantener reactividad
+    Object.assign(formEditable, data)
+    return data
   } else {
     console.log('Formulario no encontrado')
+    return null
   }
 }
 
@@ -908,6 +911,9 @@ const guardarCambios = async () => {
         fechaPago: formEditable.resumenFinanciero.fechaPago
       }
     }, { merge: true })
+    // ✅ solución rápida: refrescar los datos desde Firestore
+    const dataActualizada = await cargarFormulario()
+    formulario.value = dataActualizada
 
     console.log('Formulario guardado correctamente')
     modoEdicion.value = false
