@@ -231,6 +231,23 @@ const emailName = ref('')
 const contacName = ref('')
 const firmaTexto = ref('')
 
+// 🔹 Mapa de conversión de unidades
+const unitMap = {
+  unidad: "uni",
+  uni: "uni",
+  uds: "uni",
+  metro: "mts",
+  metros: "mts",
+  mts: "mts",
+  litro: "lts",
+  litros: "lts",
+  lts: "lts",
+  kilogramo: "kg",
+  kilo: "kg",
+  kilos: "kg",
+  kg: "kg",
+  otro: "otro"
+}
 
 async function loadClients() {
   try {
@@ -305,7 +322,8 @@ async function handleSubmit() {
   try {
     const formRef = collection(db, "formularios");
     const { cotizacionId, version } = await generarNumeroCotizacion();
-    // Preparar las secciones con totales
+
+    // 🔹 Normalizar unidades y calcular totales
     const preparedSections = sections.value.map(section => {
       let totalSection = 0;
       const productsWithTotal = section.fields.map(field => {
@@ -313,6 +331,7 @@ async function handleSubmit() {
         totalSection += productTotal;
         return {
           ...field,
+          unit: unitMap[field.unit?.toLowerCase()] || field.unit, // ✅ normaliza
           total: productTotal
         };
       });
