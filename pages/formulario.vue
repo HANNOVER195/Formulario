@@ -5,6 +5,21 @@
   </button>
   <main class="max-w-7xl mx-auto p-8 bg-gray-900 rounded-lg shadow-lg text-gray-300 mb-5">
     <h1 class="text-3xl font-semibold mb-6 text-gray-200">Crear Nuevo Formulario</h1>
+    <div class="mb-6 flex space-x-4">
+      <button type="button" @click="empresaId = 'A'" :class="[
+        'px-4 py-2 rounded text-white transition',
+        empresaId === 'A' ? 'bg-blue-600 shadow-lg' : 'bg-gray-700 hover:bg-gray-600'
+      ]">
+        BITNETS SPA
+      </button>
+
+      <button type="button" @click="empresaId = 'B'" :class="[
+        'px-4 py-2 rounded text-white transition',
+        empresaId === 'B' ? 'bg-green-600 shadow-lg' : 'bg-gray-700 hover:bg-gray-600'
+      ]">
+        BITNETS IP SPA
+      </button>
+    </div>
 
     <form @submit.prevent="handleSubmit" class="space-y-8">
       <!-- NUEVO: Selector de Cliente -->
@@ -220,10 +235,12 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { db } from '~/firebase/firebase'
-import { collection, getDocs, addDoc, serverTimestamp, query, limit, orderBy } from 'firebase/firestore'
+import { collection, getDocs, addDoc, serverTimestamp, query, limit, orderBy, where } from 'firebase/firestore'
 
 const clientes = ref([])
 const selectedClientId = ref('')
+const empresaId = ref('A') // Valor inicial opcional, por ejemplo Empresa A
+
 
 const companyName = ref('')
 const attentionName = ref('')
@@ -304,19 +321,49 @@ function removeField(sectionIndex, fieldIndex) {
   sections.value[sectionIndex].fields.splice(fieldIndex, 1)
 }
 
-async function generarNumeroCotizacion() {
-  const q = query(collection(db, "formularios"), orderBy("cotizacionId", "desc"), limit(1));
-  const snapshot = await getDocs(q);
 
-  let nuevoId = 1;
-  if (!snapshot.empty) {
-    const ultimo = snapshot.docs[0].data();
-    nuevoId = (ultimo.cotizacionId || 0) + 1;
+async function generarNumeroCotizacion() {
+  let q;
+  if (empresaId.value === 'A') {
+    // Empresa A: incluir docs con empresaId = 'A' o sin empresaId (históricas)
+    q = query(collection(db, "formularios"));
+  } else {
+    // Empresa B: solo docs con empresaId = 'B'
+    q = query(collection(db, "formularios"), where("empresaId", "==", "B"));
   }
 
-  const version = "01"; // Siempre fijo en este prototipo
+  const snapshot = await getDocs(q);
+
+  // Filtrar según empresa
+  const docsFiltrados = snapshot.docs.filter(doc => {
+    const data = doc.data();
+    if (empresaId.value === 'A') {
+      return !data.empresaId || data.empresaId === 'A';
+    } else {
+      return data.empresaId === 'B';
+    }
+  });
+
+  // Ordenar por createdAt descendente, manejando string y Timestamp
+  docsFiltrados.sort((a, b) => {
+    const fechaA = a.data().createdAt?.toMillis?.() || new Date(a.data().createdAt).getTime() || 0;
+    const fechaB = b.data().createdAt?.toMillis?.() || new Date(b.data().createdAt).getTime() || 0;
+    return fechaB - fechaA; // más reciente primero
+  });
+
+  const ultimoId = docsFiltrados.length ? docsFiltrados[0].data().cotizacionId : 0;
+  console.log("Cotización ID anterior recogida:", ultimoId); // ✅ Log agregado
+  const nuevoId = ultimoId + 1;
+  const version = "01";
+
+  console.log("Docs totales:", snapshot.docs.length);
+  console.log(`Docs filtrados por empresa ${empresaId.value}:`, docsFiltrados.length);
+  console.log("Último cotizaciónId:", ultimoId, "Nuevo ID:", nuevoId);
+
   return { cotizacionId: nuevoId, version };
 }
+
+
 
 async function handleSubmit() {
   try {
@@ -353,6 +400,7 @@ async function handleSubmit() {
 
     // Guardar en Firestore
     await addDoc(formRef, {
+      empresaId: empresaId.value,
       name: formName.value,
       companyName: companyName.value || '',
       attentionName: attentionName.value || '',

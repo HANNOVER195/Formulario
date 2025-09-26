@@ -10,11 +10,10 @@
     Editar
   </button>
 
-  <button 
-  @click="eliminarFormulario"
-  class="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded transition m-5">
-  🗑️ Eliminar Formulario
-</button>
+  <button @click="eliminarFormulario"
+    class="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded transition m-5">
+    🗑️ Eliminar Formulario
+  </button>
 
 
 
@@ -422,7 +421,11 @@ async function exportPDF() {
   // Título principal
   doc.setFontSize(8)
   doc.setFont('helvetica', 'bold')
-  doc.text('BITNETS SPA', marginLeft, currentY)
+  if (formulario.value.empresaId === 'B') {
+    doc.text('BITNETS IP SPA', marginLeft, currentY)
+  } else {
+    doc.text('BITNETS SPA', marginLeft, currentY)
+  }
 
   // Logo a la derecha (usar imagen en Base64 o data:image/png;base64,...)
   // Ajusta las coordenadas y tamaño según tu logo
@@ -433,11 +436,23 @@ async function exportPDF() {
   // Subtítulo o detalles
   doc.setFontSize(8)
   doc.setFont('helvetica', 'normal')
-  doc.text(`Servicios Integrales en Tecnologia`, marginLeft, currentY)
+  if (formulario.value.empresaId === 'B') {
+    doc.text('Servicios Informáticos', marginLeft, currentY)
+  } else {
+    doc.text('Servicios Integrales en Tecnología', marginLeft, currentY)
+  }
   currentY += 3
-  doc.text(`RUT: 76.504.212-7`, marginLeft, currentY)
+  if (formulario.value.empresaId === 'B') {
+  doc.text('RUT: 78.217.083-K', marginLeft, currentY)
+} else {
+  doc.text('RUT: 76.504.212-7', marginLeft, currentY)
+}
   currentY += 3
-  doc.text(`Caulin s/n - ANCUD`, marginLeft, currentY)
+  if (formulario.value.empresaId === 'B') {
+  doc.text('El Mañio Parcela 7E Lagunitas, PUERTO MONTT', marginLeft, currentY)
+} else {
+  doc.text('Caulin s/n - ANCUD', marginLeft, currentY)
+}
   currentY += 3
 
   // Línea divisoria
@@ -472,15 +487,15 @@ async function exportPDF() {
     currentY += 3
   }
   if (formulario.value.createdAt) {
-  const fechaObj = new Date(formulario.value.createdAt)
-  const dia = String(fechaObj.getDate()).padStart(2, '0')
-  const mes = String(fechaObj.getMonth() + 1).padStart(2, '0') // +1 porque enero = 0
-  const año = String(fechaObj.getFullYear()).slice(-4) // solo últimos 2 dígitos
+    const fechaObj = new Date(formulario.value.createdAt)
+    const dia = String(fechaObj.getDate()).padStart(2, '0')
+    const mes = String(fechaObj.getMonth() + 1).padStart(2, '0') // +1 porque enero = 0
+    const año = String(fechaObj.getFullYear()).slice(-4) // solo últimos 2 dígitos
 
-  const fecha = `${dia}-${mes}-${año}`
-  doc.text(`Fecha de creación: ${fecha}`, marginLeft, currentY)
-  currentY += 3
-}
+    const fecha = `${dia}-${mes}-${año}`
+    doc.text(`Fecha de creación: ${fecha}`, marginLeft, currentY)
+    currentY += 3
+  }
 
 
 
@@ -719,11 +734,19 @@ async function exportPDF() {
   doc.setFontSize(10)
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(100)
+  if (formulario.value.empresaId === 'B') {
   doc.text(
-    'Documento BITNETS SpA - Versión 1.0',
+    'Documento BITNETS IP SPA - Versión 1.0',
     marginLeft,
     pageHeight - 10
   )
+} else {
+  doc.text(
+    'Documento BITNETS SPA - Versión 1.0',
+    marginLeft,
+    pageHeight - 10
+  )
+}
   const numeroFormateado = `${String(doc.cotizacionId).padStart(5, "0")}${doc.version || "01"}`;
   doc.text(
     `Cotización: ${formulario.value.cotizacionId || '00000'}${formulario.value.version || '01'}`,
