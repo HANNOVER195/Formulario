@@ -415,7 +415,9 @@ async function exportPDF() {
   const marginLeft = 10
   let currentY = 5
 
+
   const logoBase64 = await loadImageAsBase64('/BitnetsLogo.jpg')
+  const logoBase64IP = await loadImageAsBase64('/BitnestIpLogo.png')
 
 
   // Título principal
@@ -430,7 +432,11 @@ async function exportPDF() {
   // Logo a la derecha (usar imagen en Base64 o data:image/png;base64,...)
   // Ajusta las coordenadas y tamaño según tu logo
   doc.addImage(logoBase64, 'PNG', 160, currentY - 1, 30, 10)
-
+  if (formulario.value.empresaId === 'B') {
+    doc.addImage(logoBase64IP, 'PNG', 160, currentY - 1, 30, 12)
+  } else {
+    doc.addImage(logoBase64, 'PNG', 160, currentY - 1, 30, 10)
+  }
   currentY += 4
 
   // Subtítulo o detalles
@@ -443,16 +449,16 @@ async function exportPDF() {
   }
   currentY += 3
   if (formulario.value.empresaId === 'B') {
-  doc.text('RUT: 78.217.083-K', marginLeft, currentY)
-} else {
-  doc.text('RUT: 76.504.212-7', marginLeft, currentY)
-}
+    doc.text('RUT: 78.217.083-K', marginLeft, currentY)
+  } else {
+    doc.text('RUT: 76.504.212-7', marginLeft, currentY)
+  }
   currentY += 3
   if (formulario.value.empresaId === 'B') {
-  doc.text('El Mañio Parcela 7E Lagunitas, PUERTO MONTT', marginLeft, currentY)
-} else {
-  doc.text('Caulin s/n - ANCUD', marginLeft, currentY)
-}
+    doc.text('El Mañio Parcela 7E Lagunitas, PUERTO MONTT', marginLeft, currentY)
+  } else {
+    doc.text('Caulin s/n - ANCUD', marginLeft, currentY)
+  }
   currentY += 3
 
   // Línea divisoria
@@ -470,32 +476,89 @@ async function exportPDF() {
   // Datos generales
   doc.setFontSize(8)
 
-  if (formulario.value.companyName) {
-    doc.text(`Empresa: ${formulario.value.companyName}`, marginLeft, currentY)
-    currentY += 3
-  }
-  if (formulario.value.attentionName) {
-    doc.text(`Atención: ${formulario.value.attentionName}`, marginLeft, currentY)
-    currentY += 3
-  }
-  if (formulario.value.emailName) {
-    doc.text(`Email: ${formulario.value.emailName}`, marginLeft, currentY)
-    currentY += 3
-  }
-  if (formulario.value.contacName) {
-    doc.text(`Teléfono: ${formulario.value.contacName}`, marginLeft, currentY)
-    currentY += 3
-  }
-  if (formulario.value.createdAt) {
-    const fechaObj = new Date(formulario.value.createdAt)
-    const dia = String(fechaObj.getDate()).padStart(2, '0')
-    const mes = String(fechaObj.getMonth() + 1).padStart(2, '0') // +1 porque enero = 0
-    const año = String(fechaObj.getFullYear()).slice(-4) // solo últimos 2 dígitos
+  if (!formulario.value.empresaId || formulario.value.empresaId === 'A') {
+    // 🔹 Condicionales de Empresa A
+    if (formulario.value.companyName) {
+      doc.text(`Empresa: ${formulario.value.companyName}`, marginLeft, currentY)
+      currentY += 3
+    }
+    if (formulario.value.attentionName) {
+      doc.text(`Atención: ${formulario.value.attentionName}`, marginLeft, currentY)
+      currentY += 3
+    }
+    if (formulario.value.emailName) {
+      doc.text(`Email: ${formulario.value.emailName}`, marginLeft, currentY)
+      currentY += 3
+    }
+    if (formulario.value.contacName) {
+      doc.text(`Teléfono: ${formulario.value.contacName}`, marginLeft, currentY)
+      currentY += 3
+    }
+    if (formulario.value.createdAt) {
+      const fechaObj = new Date(formulario.value.createdAt)
+      const dia = String(fechaObj.getDate()).padStart(2, '0')
+      const mes = String(fechaObj.getMonth() + 1).padStart(2, '0')
+      const año = String(fechaObj.getFullYear()).slice(-4)
 
+      const fecha = `${dia}-${mes}-${año}`
+      doc.text(`Fecha de creación A: ${fecha}`, marginLeft, currentY)
+      currentY += 3
+    }
+
+  } else if (formulario.value.empresaId === 'B') {
+    // 🔹 Condicionales de Empresa B
+    const leftX = 10   // posición izquierda
+    const rightX = 150 // posición derecha
+    doc.setFontSize(10)
+    // === Primera línea: Atención y Cotización ===
+    let y = currentY
+    doc.text(`ATENCIÓN:`, leftX, y)
+    // Texto completo en negro
+    
+    doc.text(
+      `Cotización: ${formulario.value.cotizacionId || '00000'}${formulario.value.version || '01'}`,
+      rightX,
+      y
+    )
+
+    // Si es 00000, dibujamos encima en rojo
+    if (!formulario.value.cotizacionId) {
+      doc.text('00000', rightX + doc.getTextWidth('Cotización: '), y)
+    }
+
+    currentY += 4  // avanzamos a la siguiente línea
+
+    doc.setFontSize(9)
+    // === Segunda línea: Nombre de la empresa y Fecha ===
+    y = currentY
+    doc.text(`${formulario.value.companyName || ''}`, marginLeft + 5, y)
+
+    const fechaObj = new Date(formulario.value.createdAt || new Date())
+    const dia = String(fechaObj.getDate()).padStart(2, '0')
+    const mes = String(fechaObj.getMonth() + 1).padStart(2, '0')
+    const año = String(fechaObj.getFullYear()).slice(-4)
     const fecha = `${dia}-${mes}-${año}`
-    doc.text(`Fecha de creación: ${fecha}`, marginLeft, currentY)
-    currentY += 3
+
+    doc.text(`Fecha: ${fecha}`, rightX, y)
+
+    
+    // === Líneas adicionales: atención, email y contacto ===
+
+    if (formulario.value.attentionName) {
+      currentY += 4
+      doc.text(`${formulario.value.attentionName}`, marginLeft + 5, currentY)
+    }
+    if (formulario.value.emailName) {
+      currentY += 4
+      doc.text(`${formulario.value.emailName}`, marginLeft + 5, currentY)
+    }
+    if (formulario.value.contacName) {
+      currentY += 4
+      doc.text(`${formulario.value.contacName}`, marginLeft + 5, currentY)
+    }
+
   }
+  currentY += 3
 
 
 
@@ -735,25 +798,31 @@ async function exportPDF() {
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(100)
   if (formulario.value.empresaId === 'B') {
-  doc.text(
-    'Documento BITNETS IP SPA - Versión 1.0',
-    marginLeft,
-    pageHeight - 10
-  )
-} else {
-  doc.text(
-    'Documento BITNETS SPA - Versión 1.0',
-    marginLeft,
-    pageHeight - 10
-  )
-}
+    doc.text(
+      'Documento BITNETS IP SPA - Versión 1.0',
+      marginLeft,
+      pageHeight - 10
+    )
+  } else {
+    doc.text(
+      'Documento BITNETS SPA - Versión 1.0',
+      marginLeft,
+      pageHeight - 10
+    )
+  }
   const numeroFormateado = `${String(doc.cotizacionId).padStart(5, "0")}${doc.version || "01"}`;
-  doc.text(
-    `Cotización: ${formulario.value.cotizacionId || '00000'}${formulario.value.version || '01'}`,
-    doc.internal.pageSize.width - marginRight,
-    pageHeight - 10,
-    { align: 'right' }
-  )
+  if (formulario.value.empresaId === 'B') {
+    void 0
+
+  } else {
+    doc.text(
+      `Cotización: ${formulario.value.cotizacionId || '00000'}${formulario.value.version || '01'}`,
+      doc.internal.pageSize.width - marginRight,
+      pageHeight - 10,
+      { align: 'right' }
+    )
+  }
+
 
   currentY += 0
 

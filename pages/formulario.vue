@@ -5,17 +5,22 @@
   </button>
   <main class="max-w-7xl mx-auto p-8 bg-gray-900 rounded-lg shadow-lg text-gray-300 mb-5">
     <h1 class="text-3xl font-semibold mb-6 text-gray-200">Crear Nuevo Formulario</h1>
+
     <div class="mb-6 flex space-x-4">
       <button type="button" @click="empresaId = 'A'" :class="[
         'px-4 py-2 rounded text-white transition',
-        empresaId === 'A' ? 'bg-blue-600 shadow-lg' : 'bg-gray-700 hover:bg-gray-600'
+        empresaId === 'A'
+          ? 'bg-blue-600 shadow-lg'
+          : 'bg-gray-700 hover:bg-gray-600'
       ]">
         BITNETS SPA
       </button>
 
       <button type="button" @click="empresaId = 'B'" :class="[
         'px-4 py-2 rounded text-white transition',
-        empresaId === 'B' ? 'bg-green-600 shadow-lg' : 'bg-gray-700 hover:bg-gray-600'
+        empresaId === 'B'
+          ? 'bg-green-600 shadow-lg'
+          : 'bg-gray-700 hover:bg-gray-600'
       ]">
         BITNETS IP SPA
       </button>
@@ -239,7 +244,7 @@ import { collection, getDocs, addDoc, serverTimestamp, query, limit, orderBy, wh
 
 const clientes = ref([])
 const selectedClientId = ref('')
-const empresaId = ref('A') // Valor inicial opcional, por ejemplo Empresa A
+const empresaId = ref(null) // Vacio por defecto
 
 
 const companyName = ref('')
@@ -279,6 +284,13 @@ async function loadClients() {
 onMounted(loadClients)
 
 function onClientChange() {
+
+  console.log("Valor inicial de empresaId:", empresaId.value);
+  if (empresaId.value) {
+    console.log("⚠️ Existe empresa seleccionada por defecto:", empresaId.value);
+  } else {
+    console.log("✅ No hay empresa seleccionada por defecto.");
+  }
   const client = clientes.value.find(c => c.id === selectedClientId.value)
   if (client) {
     companyName.value = client.name || ''
@@ -366,6 +378,11 @@ async function generarNumeroCotizacion() {
 
 
 async function handleSubmit() {
+
+  if (!empresaId.value) {
+    alert("Debes seleccionar una empresa antes de guardar el formulario.");
+    return;
+  }
   try {
     const formRef = collection(db, "formularios");
     const { cotizacionId, version } = await generarNumeroCotizacion();
