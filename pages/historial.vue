@@ -41,10 +41,20 @@
       <div v-for="form in formularios" :key="form.id"
         class="border border-gray-700 bg-gray-800 rounded-lg p-4 hover:shadow-lg transition cursor-pointer"
         @click="verFormulario(form.id)">
+        <!-- Nombre del formulario -->
         <h2 class="text-xl font-bold text-gray-100">{{ form.name }}</h2>
+
+        <!-- Número de cotización -->
+        <p class="text-sm text-gray-400">
+          Nº de Cotización: {{ form.cotizacionId || 'Sin número' }}
+        </p>
+
+        <!-- Fecha -->
         <p class="text-sm text-gray-400">
           Fecha: {{ formatDate(form.createdAt) }}
         </p>
+
+        <!-- Total final -->
         <p class="text-md font-semibold text-green-300 mt-2">
           Total Final: $
           {{
@@ -55,6 +65,7 @@
         </p>
       </div>
     </div>
+
   </main>
 </template>
 
@@ -92,22 +103,27 @@ function verFormulario(id) {
 async function cargarFormularios(empresa) {
   loading.value = true
   try {
-    // Traer todos los documentos de 'formularios'
-    const snap = await getDocs(query(
-      collection(db, 'formularios'),
-      orderBy('createdAt', 'desc')
-    ))
-
-    // Mapear documentos
+    // Traer TODOS los documentos de 'formularios'
+    const snap = await getDocs(collection(db, 'formularios'))
     const allDocs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
 
+    // Filtrar por empresa
+    let filtered = []
     if (empresa === 'A') {
-      // Empresa A: documentos con empresaId "A" o sin empresaId (antiguos)
-      formularios.value = allDocs.filter(f => !f.empresaId || f.empresaId === 'A')
+      filtered = allDocs.filter(f => !f.empresaId || f.empresaId === 'A')
     } else if (empresa === 'B') {
-      // Empresa B: solo documentos con empresaId "B"
-      formularios.value = allDocs.filter(f => f.empresaId === 'B')
+      filtered = allDocs.filter(f => f.empresaId === 'B')
     }
+
+    // Separar con y sin cotizacionId
+    const conCotizacion = filtered.filter(f => typeof f.cotizacionId !== 'undefined')
+    const sinCotizacion = filtered.filter(f => typeof f.cotizacionId === 'undefined')
+
+    // Ordenar descendente por cotizacionId
+    conCotizacion.sort((a, b) => b.cotizacionId - a.cotizacionId)
+
+    // Combinar: primero con cotización, luego sin
+    formularios.value = [...conCotizacion, ...sinCotizacion]
 
     selectedEmpresa.value = empresa
   } catch (err) {
@@ -116,6 +132,7 @@ async function cargarFormularios(empresa) {
     loading.value = false
   }
 }
+
 
 
 
