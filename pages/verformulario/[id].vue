@@ -98,7 +98,7 @@
             <span>$ {{ formatNumber(formulario.resumenFinanciero?.gastosSSO) }}</span>
           </li>
           <li class="flex justify-between"><span>Neto</span><span>$ {{ formatNumber(formulario.resumenFinanciero?.neto)
-              }}</span></li>
+          }}</span></li>
           <li class="flex justify-between"><span>IVA (19%)</span><span>$ {{
             formatNumber(formulario.resumenFinanciero?.iva) }}</span></li>
           <li class="flex justify-between font-bold border-t border-gray-600 pt-2 text-gray-100">
@@ -123,6 +123,19 @@
       <div class="bg-gray-800 text-gray-200 p-6 rounded-lg shadow-lg w-full max-w-5xl">
         <!-- Inputs -->
         <!-- Información general -->
+        <!-- Nuevos campos: Orden de compra, Factura y Fecha de Factura -->
+        <label class="block mt-2">Orden de compra:</label>
+        <input v-model="formEditable.ordenDeCompra" type="text"
+          class="w-full p-2 rounded border border-gray-600 bg-gray-700 text-gray-200" />
+
+        <label class="block mt-2">Factura:</label>
+        <input v-model="formEditable.factura" type="text"
+          class="w-full p-2 rounded border border-gray-600 bg-gray-700 text-gray-200" />
+
+        <label class="block mt-2">Fecha de factura:</label>
+        <input v-model="formEditable.fechaFactura" type="date"
+          class="w-full p-2 rounded border border-gray-600 bg-gray-700 text-gray-200" />
+
         <!-- Campo para el nombre del formulario -->
         <label class="block mt-2">Nombre del formulario:</label>
         <input v-model="formEditable.name" type="text"
@@ -368,6 +381,9 @@ function sanitizeFormulario(data) {
       fechaPago: toISO(data.resumenFinanciero?.fechaPago)
     },
     firmaTexto: data.firmaTexto ?? '',
+    ordenCompra: data.ordenCompra ?? '',
+    factura: data.factura ?? '',
+    fechaFactura: toISO(data.fechaFactura),
   }
 }
 
@@ -514,7 +530,7 @@ async function exportPDF() {
     let y = currentY
     doc.text(`ATENCIÓN:`, leftX, y)
     // Texto completo en negro
-    
+
     doc.text(
       `Cotización: ${formulario.value.cotizacionId || '00000'}${formulario.value.version || '01'}`,
       rightX,
@@ -541,7 +557,7 @@ async function exportPDF() {
 
     doc.text(`Fecha: ${fecha}`, rightX, y)
 
-    
+
     // === Líneas adicionales: atención, email y contacto ===
 
     if (formulario.value.attentionName) {
@@ -1001,7 +1017,10 @@ const guardarCambios = async () => {
         iva,
         totalFinal,
         fechaPago: formEditable.resumenFinanciero.fechaPago
-      }
+      },
+      ordenCompra: formEditable.ordenCompra || '',
+      factura: formEditable.factura || '',
+      fechaFactura: formEditable.fechaFactura || ''
     }, { merge: true })
     // ✅ solución rápida: refrescar los datos desde Firestore
     const dataActualizada = await cargarFormulario()
@@ -1053,7 +1072,5 @@ async function eliminarFormulario() {
     alert("Ocurrió un error al eliminar el formulario ❌")
   }
 }
-
-
 
 </script>

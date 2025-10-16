@@ -27,6 +27,13 @@
     </div>
 
     <form @submit.prevent="handleSubmit" class="space-y-8">
+      <!-- Campo de fecha manual compacto -->
+      <div class="mb-4">
+        <label for="fechaManual" class="block text-gray-400 font-medium mb-1">Fecha</label>
+        <input id="fechaManual" v-model="fechaManual" type="date"  class="w-48 border border-gray-700 bg-gray-800 rounded-md px-3 py-2
+           focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-200" required />
+      </div>
+
       <!-- NUEVO: Selector de Cliente -->
 
 
@@ -246,6 +253,7 @@ const clientes = ref([])
 const selectedClientId = ref('')
 const empresaId = ref(null) // Vacio por defecto
 
+const fechaManual = ref('')
 
 const companyName = ref('')
 const attentionName = ref('')
@@ -437,7 +445,8 @@ async function handleSubmit() {
       firmaTexto: firmaTexto.value,
       cotizacionId, // 5 dígitos
       version,      // "01"
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp(),
+      fechaManual: new Date(fechaManual.value)
     });
 
     alert("Formulario guardado exitosamente ✅");
