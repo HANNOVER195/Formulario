@@ -56,6 +56,17 @@
       </div>
 
       <div>
+        <label for="rut" class="block text-gray-400 font-medium mb-2">RUT</label>
+        <input
+          v-model="rut"
+          id="rut"
+          type="tel"
+          placeholder="20.256.254-0"
+          class="w-full border border-gray-700 bg-gray-800 rounded-md px-4 py-2 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-200"
+        />
+      </div>
+
+      <div>
         <button
           type="submit"
           class="w-full py-3 bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold rounded-md transition"
@@ -76,6 +87,7 @@ const clientName = ref('')
 const contactPerson = ref('')
 const email = ref('')
 const phone = ref('')
+const rut = ref('')
 
 async function handleSubmit() {
   try {
@@ -91,6 +103,7 @@ async function handleSubmit() {
       contactPerson: contactPerson.value,
       email: email.value,
       phone: phone.value,
+      rut: rut.value,
       createdAt: serverTimestamp()
     })
 
@@ -100,6 +113,7 @@ async function handleSubmit() {
     contactPerson.value = ''
     email.value = ''
     phone.value = ''
+    rut.value = ''
   } catch (error) {
     console.error('Error guardando cliente:', error)
     alert('Error guardando cliente ❌')

@@ -66,6 +66,12 @@
         </div>
 
         <div class="mb-4">
+          <label for="rutName" class="block mb-1 font-medium">RUT</label>
+          <input id="rutName" v-model="rutName" type="text" placeholder="Ej: 20.156.254-5"
+            class="w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500" />
+        </div>
+
+        <div class="mb-4">
           <label for="attentionName" class="block mb-1 font-medium">Atención a</label>
           <input id="attentionName" v-model="attentionName" type="text" placeholder="Ej: Juan Pérez"
             class="w-full rounded border border-gray-700 bg-gray-900 px-3 py-2 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500" />
@@ -139,7 +145,10 @@
 
           </div>
 
-          <!-- Unidad de medida -->
+          <!-- Unidad de medida temporal-->
+          <input v-model="field.unit" type="text" placeholder="Ej: Uni, Mts"
+             class="w-32 rounded border border-gray-700 bg-gray-800 px-3 py-2 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 mb-2 md:mb-0" />
+          <!-- Unidad de medida
           <select v-model="field.unit"
             class="w-32 rounded border border-gray-700 bg-gray-800 px-3 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 mb-2 md:mb-0">
             <option value="uds">Unidad</option>
@@ -147,7 +156,7 @@
             <option value="lts">Litro</option>
             <option value="kg">Kg</option>
             <option value="otro">Otro</option>
-          </select>
+          </select>-->
 
 
 
@@ -260,24 +269,25 @@ const attentionName = ref('')
 const emailName = ref('')
 const contacName = ref('')
 const firmaTexto = ref('')
-
+const rutName = ref('')
 // 🔹 Mapa de conversión de unidades
-const unitMap = {
-  unidad: "uni",
-  uni: "uni",
-  uds: "uni",
-  metro: "mts",
-  metros: "mts",
-  mts: "mts",
-  litro: "lts",
-  litros: "lts",
-  lts: "lts",
-  kilogramo: "kg",
-  kilo: "kg",
-  kilos: "kg",
-  kg: "kg",
-  otro: "otro"
-}
+
+//onst unitMap = {
+  //unidad: "uni",
+  //uni: "uni",
+  //uds: "uni",
+  //metro: "mts",
+ // metros: "mts",
+  //mts: "mts",
+  //litro: "lts",
+  //litros: "lts",
+ // lts: "lts",
+ // kilogramo: "kg",
+  //kilo: "kg",
+  //kilos: "kg",
+  //kg: "kg",
+  //otro: "otro"
+//}
 
 async function loadClients() {
   try {
@@ -305,11 +315,13 @@ function onClientChange() {
     attentionName.value = client.contactPerson || ''
     emailName.value = client.email || ''
     contacName.value = client.phone || ''
+    rutName.value = client.rut || ''
   } else {
     companyName.value = ''
     attentionName.value = ''
     emailName.value = ''
     contacName.value = ''
+    rutName.value = ''
   }
 }
 
@@ -318,14 +330,14 @@ const formName = ref('')
 const sections = ref([
   {
     title: '',
-    fields: [{ label: '', unitPrice: 0, quantity: 1, type: 'text', unit: 'unidad' }]
+    fields: [{ label: '', unitPrice: 0, quantity: 1, type: 'text', unit: '' }]
   }
 ])
 
 function addSection() {
   sections.value.push({
     title: '',
-    fields: [{ label: '', unitPrice: 0, quantity: 1, type: 'text', unit: 'unidad' }]
+    fields: [{ label: '', unitPrice: 0, quantity: 1, type: 'text', unit: '' }]
   })
 }
 
@@ -334,7 +346,7 @@ function removeSection(index) {
 }
 
 function addField(sectionIndex) {
-  sections.value[sectionIndex].fields.push({ label: '', unitPrice: 0, quantity: 1, type: 'text', unit: 'unidad' })
+  sections.value[sectionIndex].fields.push({ label: '', unitPrice: 0, quantity: 1, type: 'text', unit: '' })
 }
 
 function removeField(sectionIndex, fieldIndex) {
@@ -403,7 +415,6 @@ async function handleSubmit() {
         totalSection += productTotal;
         return {
           ...field,
-          unit: unitMap[field.unit?.toLowerCase()] || field.unit, // ✅ normaliza
           total: productTotal
         };
       });
@@ -431,6 +442,7 @@ async function handleSubmit() {
       attentionName: attentionName.value || '',
       emailName: emailName.value || '',
       contacName: contacName.value || '',
+      rutName: rutName.value || '',
       textSections: textSections.value || [],
       sections: preparedSections,
       totalPorSeccion: preparedSections.map(s => s.totalSection),
@@ -455,6 +467,7 @@ async function handleSubmit() {
     formName.value = '';
     companyName.value = '';
     attentionName.value = '';
+    rutName.value = '';
     textSections.value = [];
     sections.value = [
       {

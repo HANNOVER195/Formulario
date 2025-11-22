@@ -49,6 +49,7 @@
                 <p><span class="font-semibold">Contacto:</span> {{ selectedCliente.contactPerson }}</p>
                 <p><span class="font-semibold">Email:</span> {{ selectedCliente.email }}</p>
                 <p><span class="font-semibold">Teléfono:</span> {{ selectedCliente.phone }}</p>
+                <p><span class="font-semibold">RUT:</span> {{ selectedCliente.rut }}</p>
             </div>
 
             <!-- Botón editar -->
@@ -65,6 +66,7 @@
                 <input v-model="form.contactPerson" class="border p-2 w-full rounded-lg text-white" placeholder="Persona de contacto" />
                 <input v-model="form.email" class="border p-2 w-full rounded-lg text-white" placeholder="Email" />
                 <input v-model="form.phone" class="border p-2 w-full rounded-lg text-white" placeholder="Teléfono" />
+                <input v-model="form.rut" class="border p-2 w-full rounded-lg text-white" placeholder="RUT" />
 
                 <button
                 class="bg-green-600 text-white px-5 py-2 rounded-xl hover:bg-green-700 transition"
@@ -163,7 +165,7 @@ const clientes = ref([])
 const selectedCliente = ref(null)
 const modoEdicion = ref(false)
 const modoCreacion = ref(false)
-const form = ref({ name: '', contactPerson: '', email: '', phone: '' })
+const form = ref({ name: '', contactPerson: '', email: '', phone: '', rut: '' })
 const modalBorrar = ref(false)
 
 // Cargar clientes
@@ -183,12 +185,7 @@ const seleccionarCliente = (cliente) => {
   modoCreacion.value = false
 }
 
-// Abrir formulario de creación
-const abrirCreacion = () => {
-  modoCreacion.value = true
-  selectedCliente.value = null
-  form.value = { name: '', contactPerson: '', email: '', phone: '' }
-}
+
 
 // Guardar cambios en cliente existente
 const guardarCambios = async () => {
@@ -199,7 +196,8 @@ const guardarCambios = async () => {
       name: form.value.name,
       contactPerson: form.value.contactPerson,
       email: form.value.email,
-      phone: form.value.phone
+      phone: form.value.phone,
+      rut: form.value.rut
     })
     Object.assign(selectedCliente.value, form.value)
     modoEdicion.value = false
@@ -210,23 +208,7 @@ const guardarCambios = async () => {
   }
 }
 
-// Crear nuevo cliente
-const crearCliente = async () => {
-  try {
-    const clienteRef = await addDoc(collection(db, "clientes"), {
-      ...form.value,
-      createdAt: serverTimestamp()
-    })
-    const nuevoCliente = { id: clienteRef.id, ...form.value }
-    clientes.value.push(nuevoCliente)
-    modoCreacion.value = false
-    selectedCliente.value = nuevoCliente
-    alert("Cliente creado correctamente ✅")
-  } catch (err) {
-    console.error("Error al crear cliente:", err)
-    alert("Error al crear cliente ❌")
-  }
-}
+
 
 // Abrir modal de borrar
 const borrarCliente = () => {
@@ -250,10 +232,6 @@ const confirmarBorrarCliente = async () => {
   }
 }
 
-const crearNuevoClienteSeleccionado = () => {
-  selectedCliente.value = { esNuevo: true };
-  form.value = { name: '', contactPerson: '', email: '', phone: '' };
-  modoEdicion.value = false;
-};
+
 
 </script>

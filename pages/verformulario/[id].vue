@@ -27,6 +27,7 @@
       <p><strong>Atención a:</strong> {{ formulario?.attentionName || '-' }}</p>
       <p><strong>Email:</strong> {{ formulario?.emailName || '-' }}</p>
       <p><strong>Teléfono:</strong> {{ formulario?.contacName || '-' }}</p>
+      <p><strong>RUT:</strong> {{ formulario?.rutName || '-' }}</p>
       <p><strong>Fecha de creación:</strong> {{ formatDate(formulario?.createdAt) }}</p>
     </div>
 
@@ -98,7 +99,7 @@
             <span>$ {{ formatNumber(formulario.resumenFinanciero?.gastosSSO) }}</span>
           </li>
           <li class="flex justify-between"><span>Neto</span><span>$ {{ formatNumber(formulario.resumenFinanciero?.neto)
-          }}</span></li>
+              }}</span></li>
           <li class="flex justify-between"><span>IVA (19%)</span><span>$ {{
             formatNumber(formulario.resumenFinanciero?.iva) }}</span></li>
           <li class="flex justify-between font-bold border-t border-gray-600 pt-2 text-gray-100">
@@ -146,6 +147,7 @@
         <input v-model="formEditable.companyName" type="text"
           class="w-full p-2 rounded border border-gray-600 bg-gray-700 text-gray-200" />
 
+
         <label class="block mt-2">Atención a:</label>
         <input v-model="formEditable.attentionName" type="text"
           class="w-full p-2 rounded border border-gray-600 bg-gray-700 text-gray-200" />
@@ -156,6 +158,10 @@
 
         <label class="block mt-2">Teléfono:</label>
         <input v-model="formEditable.contacName" type="text"
+          class="w-full p-2 rounded border border-gray-600 bg-gray-700 text-gray-200" />
+
+        <label class="block mt-2">RUT:</label>
+        <input v-model="formEditable.rutName" type="text"
           class="w-full p-2 rounded border border-gray-600 bg-gray-700 text-gray-200" />
 
 
@@ -351,6 +357,7 @@ function sanitizeFormulario(data) {
     attentionName: data.attentionName ?? '',
     emailName: data.emailName ?? '',   // <-- usar el mismo nombre que guardas
     contacName: data.contacName ?? '', // <-- idem (phone quedó guardado como contacName)
+    rutName: data.rutName ?? '',
     createdAt: toISO(data.createdAt),
     descripcion: data.descripcion ?? '',
     detalles: data.detalles ?? '',
@@ -571,6 +578,11 @@ async function exportPDF() {
     if (formulario.value.contacName) {
       currentY += 4
       doc.text(`${formulario.value.contacName}`, marginLeft + 5, currentY)
+    }
+
+    if (formulario.value.rutName) {
+      currentY += 4
+      doc.text(`${formulario.value.rutName}`, marginLeft + 5, currentY)
     }
 
   }
@@ -900,7 +912,7 @@ const formEditable = reactive({
       title: '',
       totalSection: 0, // ✅ inicializado desde el inicio
       fields: [
-        { label: '', unitPrice: 0, quantity: 1, type: 'text', unit: 'unidad', total: 0 }
+        { label: '', unitPrice: 0, quantity: 1, type: 'text', unit: 'uni', total: 0 }
       ]
     }
   ],
