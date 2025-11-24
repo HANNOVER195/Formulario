@@ -169,11 +169,25 @@
 
 
         <!-- Secciones descriptivas -->
-        <div v-for="(section, index) in formEditable.textSections" :key="'text-' + index" class="mt-4">
-          <label class="block mt-2">Sección descriptiva {{ index + 1 }}:</label>
+        <!-- Renderizar las secciones descriptivas -->
+        <div v-for="(section, index) in formEditable.textSections" :key="index" class="mt-2">
+          <label class="block text-sm text-gray-400 mb-1">Sección {{ index + 1 }}</label>
           <textarea v-model="section.content"
-            class="w-full p-2 rounded border border-gray-600 bg-gray-700 text-gray-200"></textarea>
+            class="w-full px-4 py-2 rounded-md bg-gray-800 border border-gray-700 focus:border-blue-500 outline-none"
+            rows="3"></textarea>
         </div>
+
+        <div class="mt-4 flex justify-between">
+          <button type="button" @click="addTextSection()"
+            class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-gray-200">
+            + Agregar Sección Descriptiva
+          </button>
+          <button type="button" @click="removeLastTextSection()"
+            class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-white">
+            ✕ Eliminar Última Sección Descriptiva
+          </button>
+        </div>
+
 
         <!-- Secciones con productos -->
         <div v-for="(section, sIndex) in formEditable.sections" :key="'section-' + sIndex"
@@ -335,14 +349,8 @@ import { useRoute } from 'vue-router'
 import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore'
 import { db } from '~/firebase/firebase'
 
-
-
-
-import jsPDF from 'jspdf'
-import autoTable from 'jspdf-autotable'
-
 const route = useRoute()
-const hola = "Hola mundo";
+
 function formatNumber(value) {
   if (value == null || isNaN(value)) return '0'
   return Number(value).toLocaleString('es-CL', { maximumFractionDigits: 0 })
@@ -901,6 +909,8 @@ onMounted(async () => {
 
 
 // AREA DE EDICION DE PAGINA
+// AREA DE EDICION DE PAGINA
+// AREA DE EDICION DE PAGINA
 
 const modoEdicion = ref(false)
 
@@ -916,6 +926,7 @@ const formEditable = reactive({
       ]
     }
   ],
+  textSections: [{ content: '' }],
   totalGeneral: 0,
   utilidadPorcentaje: 20,
   resumenFinanciero: {
@@ -930,12 +941,17 @@ const formEditable = reactive({
 
 
 
+// 2️⃣ En cargarFormulario
 const cargarFormulario = async () => {
   const docRef = doc(db, 'formularios', route.params.id)
   const docSnap = await getDoc(docRef)
 
   if (docSnap.exists()) {
     const data = sanitizeFormulario(docSnap.data())
+
+    // Asegurarse de que textSections exista
+    if (!data.textSections) data.textSections = []
+
     Object.assign(formEditable, data)
     return data
   } else {
@@ -948,6 +964,17 @@ onMounted(() => {
   cargarFormulario()
 })
 
+function addTextSection() {
+  formEditable.textSections.push({ content: '' })
+  // Forzar re-render si fuera necesario
+  formEditable.textSections = [...formEditable.textSections]
+}
+
+function removeLastTextSection() {
+  if (formEditable.textSections.length > 0) {
+    formEditable.textSections.pop()
+  }
+}
 
 
 // Funciones para agregar productos y secciones
@@ -1084,5 +1111,6 @@ async function eliminarFormulario() {
     alert("Ocurrió un error al eliminar el formulario ❌")
   }
 }
+
 
 </script>
