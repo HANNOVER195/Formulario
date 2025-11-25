@@ -11,7 +11,7 @@ const route = useRoute()
 
 // Solo redirigir si estamos en la raíz "/"
 if (process.client && route.path === '/') {
-  router.replace('/menu')
+  router.replace('/login')
 }
 </script>
 
