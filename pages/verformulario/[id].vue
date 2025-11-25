@@ -513,6 +513,10 @@ async function exportPDF() {
       doc.text(`Empresa: ${formulario.value.companyName}`, marginLeft, currentY)
       currentY += 3
     }
+    if (formulario.value.rutName) {
+      currentY += 4
+      doc.text(`${formulario.value.rutName}`, marginLeft + 5, currentY)
+    }
     if (formulario.value.attentionName) {
       doc.text(`Atención: ${formulario.value.attentionName}`, marginLeft, currentY)
       currentY += 3
@@ -575,6 +579,10 @@ async function exportPDF() {
 
     // === Líneas adicionales: atención, email y contacto ===
 
+    if (formulario.value.rutName) {
+      currentY += 4
+      doc.text(`${formulario.value.rutName}`, marginLeft + 5, currentY)
+    }
     if (formulario.value.attentionName) {
       currentY += 4
       doc.text(`${formulario.value.attentionName}`, marginLeft + 5, currentY)
@@ -588,11 +596,7 @@ async function exportPDF() {
       doc.text(`${formulario.value.contacName}`, marginLeft + 5, currentY)
     }
 
-    if (formulario.value.rutName) {
-      currentY += 4
-      doc.text(`${formulario.value.rutName}`, marginLeft + 5, currentY)
-    }
-
+  
   }
   currentY += 3
 
